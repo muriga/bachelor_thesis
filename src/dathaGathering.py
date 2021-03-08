@@ -1,5 +1,4 @@
 from urllib.request import urlopen
-from requests_html import HTMLSession
 from bs4 import BeautifulSoup
 import urllib3
 import shutil
@@ -7,6 +6,11 @@ import csv
 from random import randrange
 import time
 
+def append_if_exists(data, dict, key):
+    if key in dict:
+        data.append(dict[key])
+    else:
+        data.append("NULL")
 
 # z div tried "form-grouo m-b-xs" vyberie slovnik atribut:hodnota
 def get_attr_values_pairs(panel_body):
@@ -21,13 +25,13 @@ def get_attr_values_pairs(panel_body):
 #Toto prejde div PVS. Ukladá do zoznamu obchodn0 meno, ico atd. Tento zoznam potom vloží do zoznamu data
 def pvs_processing(data, tag):
     d = get_attr_values_pairs(tag)
-    data.append(d["Obchodné meno"])
-    data.append(d["IČO"])
-    data.append(d["Právna forma"])
-    data.append(d["Adresa sídla / miesto podnikania / bydliska"])
-    data.append(d["Dátum zápisu"])
-    data.append(d["Dátum výmazu"])
-    data.append(d["Číslo vložky"])
+    append_if_exists(data,d,"Obchodné meno")
+    append_if_exists(data,d,"IČO")
+    append_if_exists(data,d,"Právna forma")
+    append_if_exists(data,d,"Adresa sídla / miesto podnikania / bydliska")
+    append_if_exists(data,d,"Dátum zápisu")
+    append_if_exists(data,d,"Dátum výmazu")
+    append_if_exists(data,d,"Číslo vložky")
 
 #Najde obchodne meno opravnenej osoby, z data najde posledny zaznam, prida do neho toto meno
 def os_processing(data, tag):
@@ -55,7 +59,11 @@ def kuv_processing(data, tag):
         names = names + name
     data.append(names)
 
-    link = tag.find("a")["href"]
+    a = tag.find("a")
+    if a == None:
+        data.append("NULL")
+        return
+    link = a["href"]
     doc_serial_num = link[31:]
     _URL = "https://rpvs.gov.sk/"
     url = _URL + link
@@ -88,13 +96,13 @@ def process_detail_page(num):
     return data
 
 if __name__ == "__main__":
-    _LAST = 32820
+    _LAST = 32935
 
-    with open('../Dataset/all.csv', 'w', newline='', encoding='utf-8') as file:
+    with open('../Dataset/all6.csv', 'w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
-        for i in range(1,12):
+        for i in range(26897,_LAST):
             writer.writerow(process_detail_page(i))
-        sleeping_time = randrange(1, 2)
+        sleeping_time = randrange(1, 3)
         time.sleep(sleeping_time)
 
 
