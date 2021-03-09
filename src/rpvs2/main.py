@@ -130,8 +130,9 @@ def clean_stopwords():
 if __name__ == '__main__':
     pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
     c = first.SimpleClassifier(PATH_DATASET)
-    print(c.is_owner(PATH_DATASET+"majitel/3718"))
-    #evaluation.evaluate(first.SimpleClassifier())
+    #print(c.is_owner(PATH_DATASET+"majitel/3718"))
+    #createTxtFromPdfs('all')
+    evaluation.evaluate(c)
     #createTxtFromPdfs('majitel')
     #print("Mame majitela")
     #createTxtFromPdfs('statutar')
