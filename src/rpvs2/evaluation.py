@@ -50,5 +50,10 @@ def evaluate(c: template.Classifier):
             if answer == 'statutar':
                 correct_statutar += 1
         test_data.at[index,'classified_as'] = answer
+    positive = all_majitel - correct_majitel + correct_statutar
+    precision = correct_statutar / positive
+    recall = correct_statutar / all_statutar
+    f1 = (2 * precision * recall) / (precision + recall)
     print(f'We had {all_majitel} documents of type "majitel", {correct_majitel/all_majitel*100}"% of them was classified correctly')
     print(f'We had {all_statutar} documents of type "statutar", {correct_statutar/all_statutar*100}"% of them was classified correctly')
+    print(f'Question is who is not KUV, just "statutar". Precision = {precision}, recall = {recall}, f1-score = {f1}')

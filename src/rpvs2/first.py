@@ -64,7 +64,7 @@ class SimpleClassifier(template.Classifier):
         pdf_name = int(re.findall("[0-9]+",path)[0])
         meta_info = self.meta_info.loc[self.meta_info['PDF'] == pdf_name]
         if meta_info.empty:
-            return text #chyba -> niektori z ulozenych sa medzitym vymazali
+            return text #TODO chyba -> niektori z ulozenych sa medzitym vymazali
             #raise Exception(f'Unable to use metainformations - I can\'t find PVS with name of pdf: \'{pdf_name}\'')
         _KUV = meta_info['KUV'].values[0]
         _PVS = meta_info['Meno PVS'].values[0]
@@ -75,17 +75,20 @@ class SimpleClassifier(template.Classifier):
         if sk is not None:
             _ADDR = _ADDR[:sk.start()]
 
-        text = substitute(_KUV,'_KUV', text)
-        text = substitute(_PVS,'_PVS', text)
-        text = substitute(_OS,'_OS', text)
-        text = substitute(_ADDR,'_ADDR', text)
+        text = substitute(_KUV,'KUV', text)
+        text = substitute(_PVS,'PVS', text)
+        text = substitute(_OS,'OS', text)
+        text = substitute(_ADDR,'ADDR', text)
         return text
+
+    def first_pattern(selfs, text):
+        pattern = re.search()
 
     def test_re(self, text):
         first_attempt = re.search('ako členovia', text)
         if first_attempt is not None:
             return True
-        pattern = r'z[aá]pis [cč]lenov vrcholov[eé]ho mana[zž]mentu([^A-W]*)s[úu] splnen[eé]'
+        pattern = r'z[aá]pis [cč]lenov vrcholov[eé]ho mana[zž]mentu([^A-W ]*)s[úu] splnen[eé]'
         second_attempt = re.search(pattern, text)
         if second_attempt is not None:
             return True
