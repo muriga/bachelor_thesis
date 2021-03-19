@@ -9,6 +9,7 @@ import stanza
 import evaluation
 import first
 import numpy as np
+import cv2
 
 PATH_DATASET = "../../Dataset/"
 PATH_LIST = "../../Dataset/all.csv"
@@ -30,6 +31,7 @@ def getListOfCompanies(df, pdfNum, text):
     #        data[c] = pickle.load(file)
 
 def getImages(pdf):
+    #https://www.thepythoncode.com/article/extract-pdf-images-in-python
     pages = len(pdf)
     images = []
     for i in range(pages):
@@ -47,7 +49,6 @@ def getImages(pdf):
             image = Image.open(io.BytesIO(image_bytes))
             # save it to local disk
             images.append(image)
-            #image.save(open(f"image{i + 1}_{image_index}.{image_ext}", "wb"))
     return images
 
 
@@ -71,9 +72,9 @@ def extractTextFromSeearchable(pdfFile):
     return txt
 
 def getImages(pdfFile):
+    #https://www.thepythoncode.com/article/extract-pdf-images-in-python
     pages = len(pdfFile)
     images = []
-    # tato cast je z nejakho tutorialu trochu
     for i in range(pages):
         page = pdfFile[i]
         imageList = page.getImageList()
@@ -84,6 +85,7 @@ def getImages(pdfFile):
             image_ext = base_image["ext"]
             image = Image.open(io.BytesIO(image_bytes))
             images.append(image)
+            #image.save(open(f"image{1}_{image_index}.{image_ext}", "wb"))
     return images
 
 def getText(filename):
@@ -127,12 +129,51 @@ def clean_stopwords():
     df_lemmatized_stopwords = pd.DataFrame(lemmatized_stopwords, columns=["word"]).drop_duplicates()
     df_lemmatized_stopwords.to_csv(f'{PATH_DATASET}stop-words.txt',header=False,index=False)
 
+def compute_skew(img):
+    print(type(img))
+    image = np.asarray(img)
+    print(image)
+    # image = cv2.bitwise_not(image)
+    height, width = image.shape
+
+    edges = cv2.Canny(image, 150, 200, 3, 5)
+    lines = cv2.HoughLinesP(edges, 1, np.pi / 180, 100, minLineLength=width / 2.0, maxLineGap=20)
+    angle = 0.0
+    number_of_line = lines.size
+    for x1, y1, x2, y2 in lines[0]:
+        if x1 != x2:
+            angle += np.arctan(y2 - y1 / x2 - x1)
+    return angle / number_of_line
+
+
+def deskew(image, angle):
+    angle = np.math.degrees(angle)
+    # image = cv2.bitwise_not(image)
+    non_zero_pixels = cv2.findNonZero(image)
+    center, wh, theta = cv2.minAreaRect(non_zero_pixels)
+
+    root_mat = cv2.getRotationMatrix2D(center, angle, 1)
+    rows, cols = image.shape
+    rotated = cv2.warpAffine(image, root_mat, (cols, rows), flags=cv2.INTER_CUBIC)
+
+    return cv2.getRectSubPix(rotated, (cols, rows), center)
+
+def rotation_check(images):
+    for i in range(len(images)):
+        cv_im = np.asarray(images[i])
+        newdata=pytesseract.image_to_osd(cv_im)
+        print(newdata)
+        #print(compute_skew(images[i]))
+
 if __name__ == '__main__':
     pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
-    c = first.SimpleClassifier(PATH_DATASET)
+    #print(getText(PATH_DATASET + "statutar/119328.pdf"))
+    #rotation_check(getImages(fitz.open(PATH_DATASET + "statutar/119328.pdf")))
+    rotation_check(getImages(fitz.open(PATH_DATASET + "statutar/119662.pdf")))
+    #c = first.SimpleClassifier(PATH_DATASET)
     #print(c.is_owner(PATH_DATASET+"majitel/3718"))
     #createTxtFromPdfs('all')
-    evaluation.evaluate(c)
+    #evaluation.evaluate(c)
     #createTxtFromPdfs('majitel')
     #print("Mame majitela")
     #createTxtFromPdfs('statutar')
