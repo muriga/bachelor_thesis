@@ -1,6 +1,7 @@
 import fitz
 import io
 from PIL import Image
+from PIL.Image import FLIP_LEFT_RIGHT
 import pytesseract
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
@@ -10,6 +11,7 @@ import evaluation
 import first
 import numpy as np
 import cv2
+from re import search
 
 PATH_DATASET = "../../Dataset/"
 PATH_LIST = "../../Dataset/all.csv"
@@ -129,47 +131,38 @@ def clean_stopwords():
     df_lemmatized_stopwords = pd.DataFrame(lemmatized_stopwords, columns=["word"]).drop_duplicates()
     df_lemmatized_stopwords.to_csv(f'{PATH_DATASET}stop-words.txt',header=False,index=False)
 
-def compute_skew(img):
-    print(type(img))
-    image = np.asarray(img)
-    print(image)
-    # image = cv2.bitwise_not(image)
-    height, width = image.shape
+def rotate(image, center = None, scale = 1.0):
+    """https://stackoverflow.com/questions/55119504/is-it-possible-to-check-orientation-of-an-image-before-passing-it-through-pytess"""
+    angle=360-int(search('(?<=Rotate: )\d+', pytesseract.image_to_osd(image)).group(0))
+    (h, w) = image.shape[:2]
 
-    edges = cv2.Canny(image, 150, 200, 3, 5)
-    lines = cv2.HoughLinesP(edges, 1, np.pi / 180, 100, minLineLength=width / 2.0, maxLineGap=20)
-    angle = 0.0
-    number_of_line = lines.size
-    for x1, y1, x2, y2 in lines[0]:
-        if x1 != x2:
-            angle += np.arctan(y2 - y1 / x2 - x1)
-    return angle / number_of_line
+    if center is None:
+        center = (w / 2, h / 2)
 
+    # Perform the rotation
+    M = cv2.getRotationMatrix2D(center, angle, scale)
+    rotated = cv2.warpAffine(image, M, (w, h))
 
-def deskew(image, angle):
-    angle = np.math.degrees(angle)
-    # image = cv2.bitwise_not(image)
-    non_zero_pixels = cv2.findNonZero(image)
-    center, wh, theta = cv2.minAreaRect(non_zero_pixels)
+    return rotated
 
-    root_mat = cv2.getRotationMatrix2D(center, angle, 1)
-    rows, cols = image.shape
-    rotated = cv2.warpAffine(image, root_mat, (cols, rows), flags=cv2.INTER_CUBIC)
-
-    return cv2.getRectSubPix(rotated, (cols, rows), center)
 
 def rotation_check(images):
+    deskewed = []
     for i in range(len(images)):
         cv_im = np.asarray(images[i])
-        newdata=pytesseract.image_to_osd(cv_im)
-        print(newdata)
-        #print(compute_skew(images[i]))
+        newdata = pytesseract.image_to_osd(cv_im)
+        rotation = search('(?<=Rotate: )\d+', newdata).group(0)
+        rotated = images[i].transpose(FLIP_LEFT_RIGHT).rotate(-int(rotation))
+        deskewed.append(rotated)
+        #rotated.save(open(f"image3_{i}.png", "wb"))
+    print(extractTextFromImages(deskewed))
+    #TODO co ak bol problem v tom, ze ten jeden je zrkadlovy a zakladny deskew vie aj tesseract?
 
 if __name__ == '__main__':
     pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
     #print(getText(PATH_DATASET + "statutar/119328.pdf"))
-    #rotation_check(getImages(fitz.open(PATH_DATASET + "statutar/119328.pdf")))
-    rotation_check(getImages(fitz.open(PATH_DATASET + "statutar/119662.pdf")))
+    rotation_check(getImages(fitz.open(PATH_DATASET + "statutar/119328.pdf")))
+    #rotation_check(getImages(fitz.open(PATH_DATASET + "statutar/119662.pdf")))
     #c = first.SimpleClassifier(PATH_DATASET)
     #print(c.is_owner(PATH_DATASET+"majitel/3718"))
     #createTxtFromPdfs('all')
