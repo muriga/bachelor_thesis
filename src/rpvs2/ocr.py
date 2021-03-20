@@ -62,8 +62,8 @@ def iterate_folder_convert_to_text(folder: str, save: bool = False, contains_txt
     :type folder: str
     :param save: Determine if strings should be saved. Default is false.
     :type save: bool
-    :param contains_txt: If method should make txt files, this determine if it will check if txt for certain pdf exists.
-    Method doesn't replace such txt if param is true.
+    :param contains_txt: If function should make txt files, this determine if it will check if txt for certain pdf exists.
+    If folder contains them, function ignore that pdf
     :type contains_txt: bool
     :returns: A dictionary where key is name of file and value recognized text
     :rtype: dict
@@ -72,16 +72,16 @@ def iterate_folder_convert_to_text(folder: str, save: bool = False, contains_txt
     directory = os.fsencode(folder)
     for file in os.listdir(directory):
         filename = os.fsdecode(file)
-        if filename.endswith(".pdf"):
+        txt_file = os.fsencode(filename.removesuffix(".pdf") + ".txt")
+        if filename.endswith(".pdf") and (not contains_txt or txt_file not in os.listdir(directory)):
+            print("uu")
             file_path = folder + "/" + filename
             text = convert_to_text(file_path)
             files[filename.title().removesuffix(".Pdf")] = text
             if save:
-                txt_file = os.fsencode(filename.removesuffix(".pdf") + ".txt")
-                if not contains_txt or txt_file not in os.listdir(directory):
-                    txt_file_name = file_path.removesuffix("pdf") + "txt"
-                    with open(txt_file_name, "w", encoding="utf-8") as file:
-                        file.write(text)
+                txt_file_name = file_path.removesuffix("pdf") + "txt"
+                with open(txt_file_name, "w", encoding="utf-8") as file:
+                    file.write(text)
 
 
 def get_images(pdf_file):
