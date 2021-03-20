@@ -93,6 +93,7 @@ def getImages(pdfFile):
 def getText(filename):
     pdfFile = fitz.open(filename)
     images = getImages(pdfFile)
+    #TODO Moze sa stat, ze najdeme nejaky obrazok - napr podpis - no dokument je v skutocnosti searchable
     if len(images) > 0:
         return extractTextFromImages(images)
     return extractTextFromSeearchable(pdfFile)
@@ -152,16 +153,17 @@ def rotation_check(images):
         cv_im = np.asarray(images[i])
         newdata = pytesseract.image_to_osd(cv_im)
         rotation = search('(?<=Rotate: )\d+', newdata).group(0)
-        rotated = images[i].transpose(FLIP_LEFT_RIGHT).rotate(-int(rotation))
-        deskewed.append(rotated)
-        #rotated.save(open(f"image3_{i}.png", "wb"))
+        print(rotation)
+        rotated = images[i]#.transpose(FLIP_LEFT_RIGHT).rotate(-int(rotation))
+        #deskewed.append(rotated)
+        rotated.save(open(f"imageERROR_{i}.png", "wb"))
     print(extractTextFromImages(deskewed))
     #TODO co ak bol problem v tom, ze ten jeden je zrkadlovy a zakladny deskew vie aj tesseract?
 
 if __name__ == '__main__':
     pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
     #print(getText(PATH_DATASET + "statutar/119328.pdf"))
-    rotation_check(getImages(fitz.open(PATH_DATASET + "statutar/119328.pdf")))
+    rotation_check(getImages(fitz.open(PATH_DATASET + "statutar/119773.pdf")))
     #rotation_check(getImages(fitz.open(PATH_DATASET + "statutar/119662.pdf")))
     #c = first.SimpleClassifier(PATH_DATASET)
     #print(c.is_owner(PATH_DATASET+"majitel/3718"))
