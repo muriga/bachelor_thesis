@@ -11,9 +11,11 @@ Dependencies:   fitz
                 pillow
                 cv2
 
-Module provides following methods:
+Module provides following functions:
     * convert_to_text - converts one pdf file to string
     * iterate_folder_convert_to_text - converts every pdf from folder to separate string
+    * get_text - get text of one pdf file which was earlier recognized and saved
+    * iterate_folder_get_text - returns dictionary of separate strings from txt files of given folder
 """
 from typing import Union
 from PIL import Image
@@ -81,7 +83,46 @@ def iterate_folder_convert_to_text(folder: str, save: bool = False, contains_txt
                 txt_file_name = file_path.removesuffix("pdf") + "txt"
                 with open(txt_file_name, "w", encoding="utf-8") as file:
                     file.write(text)
+    return files
 
+
+def get_text(file_path: str) -> str:
+    """When path to pdf of txt is given, function return string which was earlier recognized. If it can't find txt,
+        returns None
+
+    :param file_path: Path to pdf or txt file
+    :type file_path: str
+    :returns: Text which was earlier recognized
+    :rtype: str
+    """
+    if file_path.endswith(".pdf"):
+        file_path = file_path.removesuffix(".pdf") + ".txt"
+    try:
+        with open(file_path, encoding="utf-8") as f:
+            text = f.read()
+    except FileNotFoundError:
+        text = None
+    return text
+
+
+def iterate_folder_get_text(folder_path: str) -> str:
+    """When path to folder is given, function return dict of strings which was earlier recognized. Function considers
+        only txt files.
+
+    :param folder_path: Path to folder
+    :type folder_path: str
+    :returns: Dictionary where keys are names of txt/pdf files and values its text
+    :rtype: dict
+    """
+    files = dict()
+    directory = os.fsencode(folder_path)
+    for file in os.listdir(directory):
+        filename = os.fsdecode(file)
+        if filename.endswith(".txt"):
+            file_path = folder_path + "/" + filename
+            text = get_text(file_path)
+            files[filename.title().removesuffix(".Txt")] = text
+    return files
 
 def get_images(pdf_file):
     """Gets opened pdf file, return list of images from that pdf"""
