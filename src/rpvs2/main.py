@@ -13,6 +13,7 @@ import numpy as np
 import cv2
 from re import search
 import ocr
+import pattern
 
 PATH_DATASET = "../../Dataset/"
 PATH_LIST = "../../Dataset/all.csv"
@@ -36,7 +37,8 @@ def getListOfCompanies(df, pdfNum, text):
 
 if __name__ == '__main__':
     pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
-
+    testing = pattern.PatternExtract(PATH_DATASET)
+    testing.itarate_patterns()
     #c = first.SimpleClassifier(PATH_DATASET)
     #createTxtFromPdfs('all')
     #evaluation.evaluate(c)
