@@ -110,6 +110,8 @@ def images_to_string(images):
         # TODO: Q: is balancing skew necessary? What about trying balancing a left to right
         # TODO: transpose only if recognition is bad?
         # TODO: When document is flipped left to right... how to recognize that?
+        # TODO: IDEA: Make list of for example 3000 most common words. Take first 20 words. If less than X of them
+        # TODO are in list, try balance_skew. Try again, if still try flip left to right. Return best.
         rotated_image = balance_skew(images[i])
         page_text = pytesseract.image_to_string(rotated_image, lang="slk")
         text += page_text
@@ -130,9 +132,3 @@ def balance_skew(image):
     information = pytesseract.image_to_osd(cv_image)
     rotation = search('(?<=Rotate: )\d+', information).group(0)
     return image.rotate(-int(rotation))
-
-def is_in_folder(filename,folder):
-    print(filename)
-    print(folder)
-    print(filename in folder)
-    return True
