@@ -74,7 +74,6 @@ def iterate_folder_convert_to_text(folder: str, save: bool = False, contains_txt
         filename = os.fsdecode(file)
         txt_file = os.fsencode(filename.removesuffix(".pdf") + ".txt")
         if filename.endswith(".pdf") and (not contains_txt or txt_file not in os.listdir(directory)):
-            print("uu")
             file_path = folder + "/" + filename
             text = convert_to_text(file_path)
             files[filename.title().removesuffix(".Pdf")] = text
