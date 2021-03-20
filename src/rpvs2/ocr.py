@@ -21,8 +21,9 @@ from PIL.Image import FLIP_LEFT_RIGHT
 from io import BytesIO
 from re import search
 from numpy import asarray
-import fitz
 from pytesseract import pytesseract
+import fitz
+import os
 
 
 def convert_to_text(file: Union[str, fitz.Document], save: bool = False):
@@ -52,7 +53,7 @@ def convert_to_text(file: Union[str, fitz.Document], save: bool = False):
     return text
 
 
-def iterate_folder_convert_to_text(folder: str, save: bool = False):
+def iterate_folder_convert_to_text(folder: str, save: bool = False, contains_txt = False):
     """Gets file to folder, then iterate thought every pdf file in this folder, convert
         it to string. Then save text to given dict or when no dict was given, to txt files
         in same folder.
@@ -61,10 +62,26 @@ def iterate_folder_convert_to_text(folder: str, save: bool = False):
     :type folder: str
     :param save: Determine if strings should be saved. Default is false.
     :type save: bool
+    :param contains_txt: If method should make txt files, this determine if it will check if txt for certain pdf exists.
+    Method doesn't replace such txt if param is true.
+    :type contains_txt: bool
     :returns: A dictionary where key is name of file and value recognized text
     :rtype: dict
     """
-    pass
+    files = dict()
+    directory = os.fsencode(folder)
+    for file in os.listdir(directory):
+        filename = os.fsdecode(file)
+        if filename.endswith(".pdf"):
+            file_path = folder + "/" + filename
+            text = convert_to_text(file_path)
+            files[filename.title().removesuffix(".Pdf")] = text
+            if save:
+                txt_file = os.fsencode(filename.removesuffix(".pdf") + ".txt")
+                if not contains_txt or txt_file not in os.listdir(directory):
+                    txt_file_name = file_path.removesuffix("pdf") + "txt"
+                    with open(txt_file_name, "w", encoding="utf-8") as file:
+                        file.write(text)
 
 
 def get_images(pdf_file):
@@ -114,3 +131,9 @@ def balance_skew(image):
     information = pytesseract.image_to_osd(cv_image)
     rotation = search('(?<=Rotate: )\d+', information).group(0)
     return image.rotate(-int(rotation))
+
+def is_in_folder(filename,folder):
+    print(filename)
+    print(folder)
+    print(filename in folder)
+    return True

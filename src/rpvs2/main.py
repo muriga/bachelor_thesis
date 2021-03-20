@@ -163,10 +163,7 @@ def rotation_check(images):
 
 if __name__ == '__main__':
     pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
-    text = ""
-    ocr.convert_to_text(PATH_DATASET + "statutar/119773.pdf", True)
-    print("\n\n\n\n\n\n\nToto je ten text:\n\n\n\n\n\n\n")
-    print(text)
+    ocr.iterate_folder_convert_to_text(PATH_DATASET + "empty",True,True)
 
 
     #print(getText(PATH_DATASET + "statutar/119328.pdf"))
