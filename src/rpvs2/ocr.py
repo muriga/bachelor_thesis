@@ -25,14 +25,16 @@ import fitz
 from pytesseract import pytesseract
 
 
-def convert_to_text(file: Union[str, fitz.Document], destination: str = None):
-    """Gets file or path to file, convert its to string and if destination is set, save
-        string to destination, else to txt file with same name as pdf have.
+def convert_to_text(file: Union[str, fitz.Document], save: bool = False):
+    """Gets file or path to file, convert its to string and if save is set to True,
+        save string to txt file with same name as pdf have. Method also returns that string.
 
     :param file: str or fitz.Document
         The file opened by fitz or path to the file
-    :param destination: str, optional
-        String where output should be saved
+    :param save: bool, optional
+        Determine if string should be saved. Default is false.
+    :returns text: str
+        Returns recognized text
     """
     text = ""
     if type(file) == str:
@@ -41,13 +43,11 @@ def convert_to_text(file: Union[str, fitz.Document], destination: str = None):
     if len(images) > 0:
         text = images_to_string(images)
     text += searchable_pdf_parts_to_string(file)
-    print(text)
-    if destination is None:
-        print(file)
-        print(file.name)
-        # TODO save to txt file
-    else:
-        destination = text
+    if save:
+        txt_file_name = file.name.removesuffix("pdf") + "txt"
+        with open(txt_file_name, "w", encoding="utf-8") as file:
+            file.write(text)
+    return text
 
 
 def iterate_folder_convert_to_text(folder: str, destination: dict = None):

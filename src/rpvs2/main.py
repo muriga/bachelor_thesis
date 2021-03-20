@@ -12,6 +12,7 @@ import first
 import numpy as np
 import cv2
 from re import search
+import ocr
 
 PATH_DATASET = "../../Dataset/"
 PATH_LIST = "../../Dataset/all.csv"
@@ -162,8 +163,14 @@ def rotation_check(images):
 
 if __name__ == '__main__':
     pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
+    text = ""
+    ocr.convert_to_text(PATH_DATASET + "statutar/119773.pdf", True)
+    print("\n\n\n\n\n\n\nToto je ten text:\n\n\n\n\n\n\n")
+    print(text)
+
+
     #print(getText(PATH_DATASET + "statutar/119328.pdf"))
-    rotation_check(getImages(fitz.open(PATH_DATASET + "statutar/119773.pdf")))
+    #rotation_check(getImages(fitz.open(PATH_DATASET + "statutar/119773.pdf")))
     #rotation_check(getImages(fitz.open(PATH_DATASET + "statutar/119662.pdf")))
     #c = first.SimpleClassifier(PATH_DATASET)
     #print(c.is_owner(PATH_DATASET+"majitel/3718"))
