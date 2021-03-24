@@ -97,6 +97,10 @@ def get_text(file_path: str) -> str:
     """
     if file_path.endswith(".pdf"):
         file_path = file_path.removesuffix(".pdf") + ".txt"
+    elif file_path.endswith(".txt"):
+        pass
+    else:
+        file_path = file_path + ".txt"
     try:
         with open(file_path, encoding="utf-8") as f:
             text = f.read()

@@ -38,7 +38,8 @@ def getListOfCompanies(df, pdfNum, text):
 if __name__ == '__main__':
     pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
     testing = pattern.PatternExtract(PATH_DATASET)
-    testing.itarate_patterns()
+    # testing.itarate_patterns()
+    # testing.test()
     #c = first.SimpleClassifier(PATH_DATASET)
     #createTxtFromPdfs('all')
-    #evaluation.evaluate(c)
+    evaluation.evaluate(testing)

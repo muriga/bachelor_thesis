@@ -2,6 +2,7 @@ from template import Classifier
 import stanza
 import pandas as pd
 import re
+from ocr import get_text
 
 
 class PatternExtract(Classifier):
@@ -12,10 +13,25 @@ class PatternExtract(Classifier):
         self.stop_words = super().get_stop_words()
         self.nlp = stanza.Pipeline('sk', verbose=False, processors="tokenize,lemma")
         self.meta_info = pd.read_csv(path_to_dataset + "all.csv", encoding="utf-8")
-        self.patterns = self.get_setting_patterns()
+        self.patterns = self.get_patterns()
 
-    def replace_meta(self, text, path):
-        pdf_name = int(re.findall("[0-9]+", path)[0])
+    def is_owner(self, pdf_name: str) -> bool:
+        text = get_text(self.path_to_dataset + 'test1/' + pdf_name)
+        if text is None:
+            print(f'Cannot find {pdf_name}')
+            return True
+        text = self.replace_meta(text, pdf_name)
+        text = self.tokenize(text)
+        for i in range(len(self.patterns)):
+            if re.search(self.patterns[i], text) is not None:
+                print(f'{pdf_name} recognized by pattern {i}')
+                return False
+        return True
+
+    # Zákona o ochrane pred legalizáciou príjmov z trestnej činnosti a o ochrane pred |
+    # inancovaním terorizmu a o zmene a doplnení niektorých zákonov -> zakx
+    def replace_meta(self, text, pdf_name):
+        pdf_name = int(re.findall("[0-9]+", pdf_name)[0])
         meta_info = self.meta_info.loc[self.meta_info['PDF'] == pdf_name]
         if meta_info.empty:
             return text  # TODO chyba -> niektori z ulozenych sa medzitym vymazali
@@ -41,42 +57,96 @@ class PatternExtract(Classifier):
         return text
 
     def itarate_patterns(self):
+        """This was used in the process of finding regex patterns"""
         tokenized_patterns = []
         for p in self.patterns:
             pattern = ""
+            print(type(p))
             doc = self.nlp(p)
-            #for i, sentence in enumerate(doc.sentences):
+            # for i, sentence in enumerate(doc.sentences):
             for sentence in doc.sentences:
                 for token in sentence.words:
-                    #only if is not in stop words?
+                    # only if is not in stop words?
                     if token.lemma not in self.stop_words:
-                        pattern += token.lemma + " "
-                    else:
-                        print(token.lemma)
+                        if token.text[:2] == "ne" and token.lemma[:2] != "ne":
+                            pattern += "ne" + token.lemma + " "
+                        else:
+                            pattern += token.lemma + " "
             tokenized_patterns.append(pattern)
         for i in range(len(tokenized_patterns)):
             print(f'{i}. pattern: {tokenized_patterns[i]}')
 
+    def tokenize(self, text):
+        tokenized = ""
+        doc = self.nlp(text)
+        # for i, sentence in enumerate(doc.sentences):
+        for sentence in doc.sentences:
+            for token in sentence.words:
+                # only if is not in stop words?
+                if token.lemma not in self.stop_words:
+                    if token.text[:2] == "ne" and token.lemma[:2] != "ne":
+                        tokenized += "ne" + token.lemma + " "
+                    else:
+                        tokenized += token.lemma + " "
+        return tokenized
+
     def get_patterns(self):
         patterns = []
         patterns.append(re.compile(r'podmienka zápis členov vrcholového manažment '
-                       r'ust \. [$8§] 4 ods[a-zA-Z0-9.,§$ ]{0,80} sú splnené')) #0.
-        patterns.append(re.compile("spoločnosť (nepriamo )*ovládanej emitentom cenných papier")) #1
-        patterns.append("")
-
+                                   r'ust \. [$8§] 4 ods[a-zA-Z0-9.,§$ ]{0,80} byť splnené'))  # 0.
+        patterns.append(re.compile("spoločnosť (nepriamo )*ovládanej emitentom cenných papier"))  # 1
+        patterns.append(re.compile("nebyť (os )?identifikovaná žiaden fyzický osoba( ,)? mať 25%"))  # 2
+        patterns.append(re.compile("zapisujú namiesto k[uú]v člen vrcholového manažment"))  # 3
+        patterns.append(re.compile("neexistovať žiaden osoba( ,)? konať zhode spoločným postupom( ,)? žiaden osoba( ,"
+                                   ")? pvs ovláda"))  # 4
+        patterns.append(re.compile("osoba [8$§]? 6a ods \. 2 zák \. č \. 297\/2008")) # 5
+        patterns.append(re.compile(r'nie byť žiaden fyzický osoba( ,)? zmysel ustanovenie '
+                                   r'zakx mať priamy nepriamy podiel')) # 6
+        patterns.append(re.compile(r'neexistovať žiaden fyzický osoba( alebo akcionár)?'
+                                   r'( ,)? mať priamy nepriamy podiel (alebo súčet )?(najmenej )?25%')) # 7
+        patterns.append(re.compile(r'žiaden fyzický osoba nespĺňa definícium (konečného|KUV)')) # 8
+        patterns.append(re.compile(r'namiesto konečných užívateľ výhod zapisuje'))  # This should be better preprocessed
+        patterns.append(re.compile(r'neidentifikovala žiadny fyzické osoba kuv')) # 10
+        patterns.append(re.compile(r'z[aá]pis [cč]len vrcholov[eé]ho mana[zž]ment(u)?([^A-W ]*)(s[úu]|byť) splnen[eé]')) # 11
+        patterns.append(re.compile(r'[čc]len(ovia)? vrcholového')) # 12
+        return patterns
 
     def get_setting_patterns(self):
-        #chcelo by to predtym zmenit veci typu konečný užívateľ výhod/KÚV na KUV
+        # chcelo by to predtym zmenit veci typu konečný užívateľ výhod/KÚV na KUV
         patterns = []
-        #patterns.append("podmienky na zápis členov vrcholového manažmentu podľa ust. § 4 ods. ... sú splnené")
-        #patterns.append("ako spoločnosti (nepriamo) ovládanej emitentom cenných papierov")
+        patterns.append("podmienky na zápis členov vrcholového manažmentu podľa ust. § 4 ods. ... sú splnené")
+        patterns.append("ako spoločnosti (nepriamo) ovládanej emitentom cenných papierov")
         patterns.append("nebol (Oprávnena osoba) identifikovaná žiadna fyzická osoba, ktorá by mala viac ako 25%")
         patterns.append("sa zapisujú namiesto KÚV členovia vrcholového manažmentu")
-        patterns.append("neexistuje žiadna osoba, ktorá by konala v zhode alebo spoločným postupom, ani žiadna osoba, ktorá PVS ovláda")
+        patterns.append(
+            "neexistuje žiadna osoba, ktorá by konala v zhode alebo spoločným postupom, ani žiadna osoba, ktorá PVS ovláda")
         patterns.append("osoba podľa [8$§] 6a ods. 2 zák.č. 297/2008")
         patterns.append("nie je žiadna fyzická osoba, ktorá v zmysle ustanovenia ... má priamy alebo nepriamy podiel")
-        patterns.append("neexistuje žiadna fyzická osoba [alebo akcionár], ktorá by mala priamy alebo nepriamy podiel [alebo ich súčet] najmenej 25%")
+        patterns.append(
+            "neexistuje žiadna fyzická osoba [alebo akcionár], ktorá by mala priamy alebo nepriamy podiel [alebo ich súčet] najmenej 25%")
         patterns.append("žiadna fyzická osoba nespĺňa definíciu konečného")
         patterns.append("namiesto konečných užívateľov výhod zapisuje")
-        patterns.append("neidentifikovala žiadne fyzické osoby ako KUV")
+        patterns.append("neidentifikovala žiadne fyzické osoby ako kuv")
+        patterns.append(r'zápis členov vrcholového manažmentu sú splnené')
+        patterns.append(r'členovia vrcholového')
         return patterns
+
+    def test(self):
+        strings = []
+        strings.append("podmienka zápis členov vrcholového manažment ust . § 4 ods . . . . byť splnené")
+        strings.append("spoločnosť nepriamo ovládanej emitentom cenných papier")
+        strings.append("nebyť os identifikovaná žiaden fyzický osoba , mať 25%")
+        strings.append("zapisujú namiesto kúv člen vrcholového manažment")
+        strings.append("neexistovať žiaden osoba , konať zhode spoločným postupom , žiaden osoba , pvs ovláda")
+        strings.append("osoba § 6a ods . 2 zák . č . 297/2008")
+        strings.append("nie byť žiaden fyzický osoba , zmysel ustanovenie zakx mať priamy nepriamy podiel")
+        strings.append("neexistovať žiaden fyzický osoba alebo akcionár , mať "
+                       "priamy nepriamy podiel alebo súčet najmenej 25%")
+        strings.append("žiaden fyzický osoba nespĺňa definícium konečného")
+        strings.append("namiesto konečných užívateľ výhod zapisuje")
+        strings.append("neidentifikovala žiadny fyzické osoba kuv")
+        for i in range(len(self.patterns)):
+            if re.search(self.patterns[i], strings[i]) is None:
+                print(i)
+                print(self.patterns[i])
+                print(strings[i])
