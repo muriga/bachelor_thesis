@@ -23,7 +23,7 @@ from PIL.Image import FLIP_LEFT_RIGHT
 from io import BytesIO
 from re import search
 from numpy import asarray
-from pytesseract import pytesseract
+from pytesseract import pytesseract, TesseractError
 import fitz
 import os
 
@@ -55,7 +55,7 @@ def convert_to_text(file: Union[str, fitz.Document], save: bool = False):
     return text
 
 
-def iterate_folder_convert_to_text(folder: str, save: bool = False, contains_txt = False):
+def iterate_folder_convert_to_text(folder: str, save: bool = False, contains_txt=False):
     """Gets file to folder, then iterate thought every pdf file in this folder, convert
         it to string. Then save text to given dict or when no dict was given, to txt files
         in same folder.
@@ -128,6 +128,7 @@ def iterate_folder_get_text(folder_path: str) -> str:
             files[filename.title().removesuffix(".Txt")] = text
     return files
 
+
 def get_images(pdf_file):
     """Gets opened pdf file, return list of images from that pdf"""
     # Source: https://www.thepythoncode.com/article/extract-pdf-images-in-python
@@ -143,9 +144,29 @@ def get_images(pdf_file):
             image = Image.open(BytesIO(image_bytes))
             images.append(image)
             # This may be useful while debugging
-            # image_ext = base_image["ext"]
-            # image.save(open(f"image{pdf_file.removesuffix('.pdf')}_{image_index}.{image_ext}", "wb"))
+            image_ext = base_image["ext"]
+            image.save(open(f"{pdf_file.name.removesuffix('.pdf')}_{i}_{image_index}.{image_ext}", "wb"))
     return images
+
+
+def contain_too_many_uppercase(text):
+    i = 25
+    uppercase = 0
+    lowercase = 0
+    other = 0
+    while i < 125 and i < len(text):
+        if text[i].isupper():
+            uppercase += 1
+        elif text[i].islower():
+            lowercase += 1
+        else:
+            other += 1
+        i += 1
+    print(f'{uppercase} <> {lowercase}')
+    print(text[25:125])
+    if lowercase+uppercase > 0 and uppercase > lowercase:
+        return True
+    return False
 
 
 def images_to_string(images):
@@ -158,8 +179,18 @@ def images_to_string(images):
         # TODO: IDEA: Make list of for example 3000 most common words. Take first 20 words. If less than X of them
         # TODO are in list, try balance_skew. Try again, if still try flip left to right. Return best.
         # rotated_image = balance_skew(images[i])
-        rotated_image = images[i]
-        page_text = pytesseract.image_to_string(rotated_image, lang="slk")
+        image = images[i]
+        page_text = pytesseract.image_to_string(image, lang="slk")
+        # skus ci je strana ok ak nie, otoc ju, skus ci je nova ok. ak nie, rotuj left -> right skus znova
+        if contain_too_many_uppercase(page_text):
+            balanced_image = balance_skew(image)
+            balanced_page_text = pytesseract.image_to_string(balanced_image, lang="slk")
+            page_text = balanced_page_text
+            if contain_too_many_uppercase(balanced_page_text):
+                demirrored_image = balance_skew(image).transpose(FLIP_LEFT_RIGHT)
+                demirrored_page_text = pytesseract.image_to_string(demirrored_image, lang="slk")
+                if not contain_too_many_uppercase(demirrored_page_text):
+                    page_text = demirrored_page_text
         text += page_text
     return text
 
@@ -175,6 +206,10 @@ def searchable_pdf_parts_to_string(pdf_file):
 def balance_skew(image):
     """Using pytesseract method recognize skew of text in image and returns balanced image"""
     cv_image = asarray(image)
-    information = pytesseract.image_to_osd(cv_image)
-    rotation = search('(?<=Rotate: )\d+', information).group(0)
-    return image.rotate(-int(rotation))
+    try:
+        information = pytesseract.image_to_osd(cv_image)
+        rotation = search('(?<=Rotate: )\d+', information).group(0)
+        return image.rotate(-int(rotation))
+    except TesseractError:
+        print("Havent rotated - tesseract error")
+    return image

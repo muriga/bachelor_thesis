@@ -42,5 +42,6 @@ if __name__ == '__main__':
     # testing.test()
     #c = first.SimpleClassifier(PATH_DATASET)
     #createTxtFromPdfs('all')
-    evaluation.evaluate(testing)
-    testing.pattern_statistics()
+    # evaluation.evaluate(testing)
+    # testing.pattern_statistics()
+    print(ocr.convert_to_text(PATH_DATASET + "statutar/119328.pdf"))
