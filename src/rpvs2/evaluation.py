@@ -45,10 +45,14 @@ def evaluate(c: template.Classifier):
             all_majitel += 1
             if answer == 'majitel':
                 correct_majitel += 1
+            else:
+                print(f'{row["pdf_name"]} was not recognized as majitel')
         if(row['typ'] == 'statutar'):
             all_statutar += 1
             if answer == 'statutar':
                 correct_statutar += 1
+            else:
+                print(f'{row["pdf_name"]} was not recognized as statutar')
         test_data.at[index,'classified_as'] = answer
     positive = all_majitel - correct_majitel + correct_statutar
     precision = correct_statutar / positive

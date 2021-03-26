@@ -43,3 +43,4 @@ if __name__ == '__main__':
     #c = first.SimpleClassifier(PATH_DATASET)
     #createTxtFromPdfs('all')
     evaluation.evaluate(testing)
+    testing.pattern_statistics()
