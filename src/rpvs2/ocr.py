@@ -19,7 +19,7 @@ Module provides following functions:
 """
 from typing import Union
 from PIL import Image
-from PIL.Image import FLIP_LEFT_RIGHT
+from PIL.Image import FLIP_TOP_BOTTOM
 from io import BytesIO
 from re import search
 from numpy import asarray
@@ -162,8 +162,6 @@ def contain_too_many_uppercase(text):
         else:
             other += 1
         i += 1
-    print(f'{uppercase} <> {lowercase}')
-    print(text[25:125])
     if lowercase+uppercase > 0 and uppercase > lowercase:
         return True
     return False
@@ -173,24 +171,23 @@ def images_to_string(images):
     """Using pytesseract, method recognize text from list of images and return one string"""
     text = ""
     for i in range(len(images)):
-        # TODO: Q: is balancing skew necessary? What about trying balancing a left to right
-        # TODO: transpose only if recognition is bad?
-        # TODO: When document is flipped left to right... how to recognize that?
-        # TODO: IDEA: Make list of for example 3000 most common words. Take first 20 words. If less than X of them
-        # TODO are in list, try balance_skew. Try again, if still try flip left to right. Return best.
-        # rotated_image = balance_skew(images[i])
+        # TODO: contain_too_many_uppercase is maybe not best approach
+        # TODO possible fixes:  1. create dictionary of common words
+        # TODO                  2. tesseract recognition of language
+        # TODO                  3. if one of image is damaged, all pdf are damaged
         image = images[i]
         page_text = pytesseract.image_to_string(image, lang="slk")
         # skus ci je strana ok ak nie, otoc ju, skus ci je nova ok. ak nie, rotuj left -> right skus znova
         if contain_too_many_uppercase(page_text):
-            balanced_image = balance_skew(image)
-            balanced_page_text = pytesseract.image_to_string(balanced_image, lang="slk")
-            page_text = balanced_page_text
-            if contain_too_many_uppercase(balanced_page_text):
-                demirrored_image = balance_skew(image).transpose(FLIP_LEFT_RIGHT)
-                demirrored_page_text = pytesseract.image_to_string(demirrored_image, lang="slk")
-                if not contain_too_many_uppercase(demirrored_page_text):
-                    page_text = demirrored_page_text
+            flipped_image = image.transpose(FLIP_TOP_BOTTOM)
+            flipped_page_text = pytesseract.image_to_string(flipped_image, lang="slk")
+            if contain_too_many_uppercase(flipped_page_text):
+                balanced_image = balance_skew(image)
+                balanced_page_text = pytesseract.image_to_string(balanced_image, lang="slk")
+                if not contain_too_many_uppercase(balanced_page_text):
+                    page_text = balanced_page_text
+            else:
+                page_text = flipped_page_text
         text += page_text
     return text
 

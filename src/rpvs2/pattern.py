@@ -21,7 +21,7 @@ class PatternExtract(Classifier):
         owner = True
         if not pdf_name.endswith(".pdf"):
             pdf_name = pdf_name + ".pdf"
-        text = convert_to_text(self.path_to_dataset + 'test3/' + pdf_name,True)
+        text = convert_to_text(self.path_to_dataset + 'test3/' + pdf_name)
         if text is None:
             print(f'Cannot find {pdf_name}')
             return True

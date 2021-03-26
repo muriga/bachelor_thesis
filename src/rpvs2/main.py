@@ -44,4 +44,5 @@ if __name__ == '__main__':
     #createTxtFromPdfs('all')
     # evaluation.evaluate(testing)
     # testing.pattern_statistics()
-    print(ocr.convert_to_text(PATH_DATASET + "statutar/119328.pdf"))
+    print(testing.is_owner(PATH_DATASET + "statutar/114845.pdf"))
+    # print(ocr.convert_to_text(PATH_DATASET + "statutar/114845.pdf"))
