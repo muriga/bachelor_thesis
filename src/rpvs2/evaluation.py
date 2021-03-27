@@ -29,7 +29,7 @@ def load_test_data(majitel, statuar):
 def evaluate(c: template.Classifier):
     c.train(PATH_DATASET + "majitel", PATH_DATASET + "statutar")
     test_data = load_test_data(PATH_DATASET + "majitel", PATH_DATASET + "statutar")
-    test_data = test_data.sample(frac=1).reset_index(drop=True)
+    #test_data = test_data.sample(frac=1).reset_index(drop=True)
     stats = {}
     correct_majitel = 0
     correct_statutar = 0
@@ -37,7 +37,7 @@ def evaluate(c: template.Classifier):
     all_statutar = 0
     #print(test_data)
     for index, row in test_data.iterrows():
-        if c.is_owner(row['pdf_name']):
+        if c.is_owner(row['pdf_name'], row['typ'] == 'majitel'):
             answer = "majitel"
         else:
             answer = "statutar"
