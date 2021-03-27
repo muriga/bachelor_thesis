@@ -47,7 +47,7 @@ class PatternExtract(Classifier):
             # print(f'Nemam {pdf_name}')
             return text  # TODO chyba -> niektori z ulozenych sa medzitym vymazali
             # raise Exception(f'Unable to use metainformations - I can\'t find PVS with name of pdf: \'{pdf_name}\'')
-        _KUV = meta_info['KUV'].values[0]
+        _KUV = meta_info['KUV'].values[0].split(' | ')
         _PVS = meta_info['Meno PVS'].values[0]
         _OS = meta_info['Opravnena osoba'].values[0]
         _ADDR = meta_info['Adresa'].values[0]
@@ -56,7 +56,8 @@ class PatternExtract(Classifier):
         if sk is not None:
             _ADDR = _ADDR[:sk.start()]
 
-        text = self.substitute(_KUV, 'KUV', text)
+        for _kuv in _KUV:
+            text = self.substitute(_kuv, 'KUV', text)
         text = self.substitute(_PVS, 'PVS', text)
         text = self.substitute(_OS, 'OS', text)
         text = self.substitute(_ADDR, 'ADDR', text)
