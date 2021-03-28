@@ -22,7 +22,7 @@ class PatternExtract(Classifier):
         owner = True
         if not pdf_name.endswith(".pdf"):
             pdf_name = pdf_name + ".pdf"
-        text = get_text(self.path_to_dataset + 'test3/' + pdf_name)
+        text = convert_to_text(self.path_to_dataset + 'test2/' + pdf_name, True)
         if text is None:
             print(f'Cannot find {pdf_name}')
             return True
@@ -138,10 +138,10 @@ class PatternExtract(Classifier):
         patterns.append(re.compile("(spoločnosť|pvs) (výlučne )?(nepriamo )?ovládanej emitentom"))  # 0
         patterns.append(re.compile("osoba [8$§]? 6a ods \. 2 zák \. č \. 297\/2008")) #1
         patterns.append(re.compile(r'(nofo nesp..a|nesp..a nofo)( |\n)((u) pvs )?(defin.ciu[^ \n]*|krit.ri[^ \n]*|([^ \n]*( |\n)){0,3})kuv'))#2
-        patterns.append(re.compile(r'namiesto kuv (zapisuje|pova.[^ \n]*)'))  #3
+        #patterns.append(re.compile(r'namiesto kuv (zapisuje|pova.[^ \n]*)'))  #3
         patterns.append(re.compile(r'namiesto kuv')) #4
         patterns.append(re.compile(r'nofo( |\n)*(pvs( |\n)*)*nesp..a( |\n)*(krit.r(^ \n)*|podmienk(^ \n)*)'))#5
-        patterns.append(re.compile(r'kuv( |\n)*(spolo([^ \n]*)?( |\n))?pov([^ \n]*)? vmkuv'))#6
+        #patterns.append(re.compile(r'kuv( |\n)*(spolo([^ \n]*)?( |\n))?pov([^ \n]*)? vmkuv'))#6
         patterns.append(re.compile(r'pov([^ \n]*)? vmkuv'))#7
         return patterns
 

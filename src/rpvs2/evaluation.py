@@ -28,7 +28,7 @@ def load_test_data(majitel, statuar):
 
 def evaluate(c: template.Classifier):
     c.train(PATH_DATASET + "majitel", PATH_DATASET + "statutar")
-    test_data = load_test_data(PATH_DATASET + "majitel", PATH_DATASET + "statutar")
+    test_data = load_test_data(PATH_DATASET + "test_majitel", PATH_DATASET + "test_statutar")
     #test_data = test_data.sample(frac=1).reset_index(drop=True)
     stats = {}
     correct_majitel = 0

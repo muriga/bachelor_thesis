@@ -144,8 +144,8 @@ def get_images(pdf_file):
             image = Image.open(BytesIO(image_bytes))
             images.append(image)
             # This may be useful while debugging
-            image_ext = base_image["ext"]
-            image.save(open(f"{pdf_file.name.removesuffix('.pdf')}_{i}_{image_index}.{image_ext}", "wb"))
+            # image_ext = base_image["ext"]
+            # image.save(open(f"{pdf_file.name.removesuffix('.pdf')}_{i}_{image_index}.{image_ext}", "wb"))
     return images
 
 
