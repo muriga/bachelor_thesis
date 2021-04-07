@@ -1,19 +1,10 @@
-import fitz
-import io
-from PIL import Image
-from PIL.Image import FLIP_LEFT_RIGHT
 import pytesseract
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
-import os
-import stanza
-import evaluation
-import first
-import numpy as np
-import cv2
-from re import search
+import slearning
 import ocr
 import pattern
+import evaluation
 
 PATH_DATASET = "../../Dataset/"
 PATH_LIST = "../../Dataset/all.csv"
@@ -37,6 +28,12 @@ def getListOfCompanies(df, pdfNum, text):
 
 if __name__ == '__main__':
     pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
-    testing = pattern.PatternExtract(PATH_DATASET)
-    evaluation.evaluate(testing)
-    testing.pattern_statistics()
+    # ocr.iterate_folder_convert_to_text(PATH_DATASET + 'test_statutar',save=True,contains_txt=False)
+    #testing = pattern.PatternExtract(PATH_DATASET)
+    #ocr.iterate_folder_convert_to_text(PATH_DATASET + "majitel", save=True, contains_txt=True)
+    #ocr.iterate_folder_convert_to_text(PATH_DATASET + "statutar", save=True, contains_txt=True)
+    #ocr.iterate_folder_convert_to_text(PATH_DATASET + "test_majitel", save=True, contains_txt=True)
+    #ocr.iterate_folder_convert_to_text(PATH_DATASET + "test_statutar", save=True, contains_txt=False)
+    #evaluation.evaluate(testing)
+    #testing.pattern_statistics()
+    slearning.find_model(PATH_DATASET)

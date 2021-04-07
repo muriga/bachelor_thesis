@@ -22,7 +22,7 @@ class PatternExtract(Classifier):
         owner = True
         if not pdf_name.endswith(".pdf"):
             pdf_name = pdf_name + ".pdf"
-        text = convert_to_text(self.path_to_dataset + 'test2/' + pdf_name, True)
+        text = get_text(self.path_to_dataset + 'test2/' + pdf_name)
         if text is None:
             print(f'Cannot find {pdf_name}')
             return True
@@ -31,7 +31,7 @@ class PatternExtract(Classifier):
         text = self.tokenize(text)
         for i in range(len(self.patterns)):
             if re.search(self.patterns[i], text) is not None:
-                print(f'{pdf_name} recognized by pattern {i}')
+                #print(f'{pdf_name} recognized by pattern {i}')
                 if fact_is_owner:
                     self.confused[i] += 1
                 else:
@@ -113,10 +113,10 @@ class PatternExtract(Classifier):
                  "( |\n)*mana.ment[^ \n]*|(predstav[^ \n]*( |\n)*)?.tatut.r[^ \n]*( |\n)*org.n[^ \n]*)+"
         pvs = "[Pp]artner([^ \n]*)?(( |\n)*verejn.([^ \n]*)?( |\n)*sektora)?"
         kuv = "[Kk]one.n[^ \n]*( |\n)*u..vate[^ \n]*( |\n)*v.hod[^ \n]*"
-        nofo = "(.iadn[^ \n]*)?( |\n)*fyzick.( |\n)*osoba"
+        nofo = "((.iadn[^ \n]*)( |\n)*)+fyzick.( |\n)*osob."
         fo = "fyzick.( |\n)*osob."
         os = ".pr.vn[^ \n]*( |\n)*.sob[^ \n]*"
-        zakx = "[8$§](\.| |\n)*6a(\.| |\n)*od([^ \n])*(\.| |\n)*([1-9I]?(\.| |\n)*)((p.s([^ \n])*" \
+        zakx = "[8$§](\.| |\n)*6a(\.| |\n)*(od)?([^ \n])*(\.| |\n)*([1-9I]?(\.| |\n)*)((p.s([^ \n])*" \
                "(\.| |\n)*([a-z)])*)?( |\n)*)?[Zz].ko([^ \n])*(\.| |\n)*(.\.(\.| |\n)*297\/2008(\.| |\n)*" \
                ".(\.| |\n)*.(\.| |\n)*)?(o( |\n))?(ochrane( |\n)*)?(pred( |\n)*)?(leg([^ \n])*( |\n)*)?" \
                "(pr.j([^ \n])*( |\n)*)?(z( |\n)*)?(tr([^ \n])*( |\n)*)?(.inn([^ \n])*(\n| ))?(a )?(o )?" \
@@ -135,14 +135,13 @@ class PatternExtract(Classifier):
 
     def get_patterns(self):
         patterns = []
-        patterns.append(re.compile("(spoločnosť|pvs) (výlučne )?(nepriamo )?ovládanej emitentom"))  # 0
-        patterns.append(re.compile("osoba [8$§]? 6a ods \. 2 zák \. č \. 297\/2008")) #1
-        patterns.append(re.compile(r'(nofo nesp..a|nesp..a nofo)( |\n)((u) pvs )?(defin.ciu[^ \n]*|krit.ri[^ \n]*|([^ \n]*( |\n)){0,3})kuv'))#2
-        #patterns.append(re.compile(r'namiesto kuv (zapisuje|pova.[^ \n]*)'))  #3
-        patterns.append(re.compile(r'namiesto kuv')) #4
-        patterns.append(re.compile(r'nofo( |\n)*(pvs( |\n)*)*nesp..a( |\n)*(krit.r(^ \n)*|podmienk(^ \n)*)'))#5
-        #patterns.append(re.compile(r'kuv( |\n)*(spolo([^ \n]*)?( |\n))?pov([^ \n]*)? vmkuv'))#6
-        patterns.append(re.compile(r'pov([^ \n]*)? vmkuv'))#7
+        patterns.append(re.compile("(spolo.nos.|pvs) (v.lu.ne )?(nepriamo )?ovl.d(^ \n)* emitent(^ \n)*"))  # 0
+        patterns.append(re.compile("osoba [8$§]? 6a ods \. 2 z.k \. . \. 297\/2008"))  # 1
+        patterns.append(re.compile(
+            r'(nofo nesp..a|nesp..a nofo)( |\n)((u) pvs )?(defin.ciu[^ \n]*|krit.ri[^ \n]*|([^ \n]*( |\n)){0,3})kuv'))  # 2
+        patterns.append(re.compile(r'namiesto kuv'))  # 3
+        patterns.append(re.compile(r'nofo( |\n)*(pvs( |\n)*)*nesp..a( |\n)*(krit.r(^ \n)*|podmienk(^ \n)*)'))  # 4
+        patterns.append(re.compile(r'pov([^ \n]*)? vmkuv'))  # 5
         return patterns
 
     def get_setting_patterns(self):
@@ -150,7 +149,7 @@ class PatternExtract(Classifier):
         patterns.append("podmienky na zápis členov vrcholového manažmentu podľa ust. § 4 ods. ... sú splnené")
         patterns.append("ako spoločnosti (nepriamo) ovládanej emitentom cenných papierov")
         patterns.append("nebol (Oprávnena osoba) identifikovaná žiadna fyzická osoba, ktorá by mala viac ako 25%")
-        patterns.append("sa zapisujú namiesto KÚV členovia vrcholového manažmentu") # štatutárny orgán
+        patterns.append("sa zapisujú namiesto KÚV členovia vrcholového manažmentu")  # štatutárny orgán
         patterns.append(
             "neexistuje žiadna osoba, ktorá by konala v zhode alebo spoločným postupom, ani žiadna osoba, ktorá PVS ovláda")
         patterns.append("osoba podľa [8$§] 6a ods. 2 zák.č. 297/2008")
