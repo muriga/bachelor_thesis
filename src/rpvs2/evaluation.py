@@ -27,7 +27,7 @@ def load_test_data(majitel, statuar):
 
 
 def evaluate(c: template.Classifier):
-    c.train(PATH_DATASET + "majitel", PATH_DATASET + "statutar")
+    c.train(PATH_DATASET + "majitel", PATH_DATASET + "statutar", save_model=True)
     test_data = load_test_data(PATH_DATASET + "test_majitel", PATH_DATASET + "test_statutar")
     #test_data = test_data.sample(frac=1).reset_index(drop=True)
     stats = {}
@@ -45,15 +45,15 @@ def evaluate(c: template.Classifier):
             all_majitel += 1
             if answer == 'majitel':
                 correct_majitel += 1
-            #else:
-            #    print(f'{row["pdf_name"]} was not recognized as majitel')
+            else:
+                print(f'{row["pdf_name"]} was not recognized as majitel')
         if(row['typ'] == 'statutar'):
             all_statutar += 1
             if answer == 'statutar':
                 print(row['pdf_name'])
                 correct_statutar += 1
-           # else:
-            #    print(f'{row["pdf_name"]} was not recognized as statutar')
+            else:
+                print(f'{row["pdf_name"]} was not recognized as statutar')
         test_data.at[index,'classified_as'] = answer
     positive = all_majitel - correct_majitel + correct_statutar
     precision = correct_statutar / positive
@@ -61,4 +61,8 @@ def evaluate(c: template.Classifier):
     f1 = (2 * precision * recall) / (precision + recall)
     print(f'We had {all_majitel} documents of type "majitel", {correct_majitel/all_majitel*100}"% of them was classified correctly')
     print(f'We had {all_statutar} documents of type "statutar", {correct_statutar/all_statutar*100}"% of them was classified correctly')
-    print(f'Question is who is not KUV, just "statutar". Precision = {precision}, recall = {recall}, f1-score = {f1}')
+    print(f'On question who is not KUV, just "statutar". Precision = {precision}, recall = {recall}, f1-score = {f1}')
+    precision_majitel = correct_majitel / (all_statutar - correct_statutar + correct_majitel)
+    recall_majitel = correct_majitel / all_majitel
+    f1_majitel = (2 * precision_majitel * recall_majitel) / (precision_majitel + recall_majitel)
+    print(f'On question who is KUV, "majitel". Precision = {precision_majitel}, recall = {recall_majitel}, f1-score = {f1_majitel}')

@@ -9,11 +9,90 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.neural_network import MLPClassifier
 from sklearn.svm import SVC
 from sklearn import metrics
+from ocr import get_text
 import re
 import stanza
 import pandas as pd
+from template import Classifier
+from joblib import dump, load
+import time
 
-nlp = stanza.Pipeline('sk', verbose=False, processors="tokenize,lemma")
+PATH_MODELS = "../../models/"
+MAJITEL = 0
+STATUTAR = 1
+
+class SupervisedClassifier(Classifier):
+
+    def __init__(self, path_dataset):
+        self.path_to_dataset = path_dataset
+        self.classifier = None
+        self.nlp = stanza.Pipeline('sk', verbose=False, processors="tokenize,lemma")
+        self.model_id = time.strftime("%m-%d-%H%M%S")
+        self.vectorizer = None
+        self.description = "CountVectorizer(min_df=3, max_df=97)\n" \
+                           "MLPClassifier(solver='lbfgs', random_state=5, verbose=False)"
+
+    def train(self, path_owners: str, path_managers: str, path_pretrained: str = None, save_model: bool = False):
+        if path_pretrained is not None:
+            self.classifier = load(path_pretrained)
+            return
+        texts, target = self.load_data(path_owners, path_managers)
+        self.vectorizer = CountVectorizer(min_df=3, max_df=97)
+        dt_matrix = self.vectorizer.fit_transform(texts)
+        self.classifier = MLPClassifier(solver='lbfgs', random_state=5, verbose=False).fit(dt_matrix.toarray(), target)
+        if save_model:
+            dump(self.classifier ,PATH_MODELS + "model_" + self.model_id + ".joblib")
+            with open(PATH_MODELS + "desc_" + self.model_id + ".txt", "w", encoding="utf-8") as file:
+                file.write(self.description)
+
+
+
+    def is_owner(self, pdf_name: str, fact_is_owner) -> bool:
+        owner = True
+        if not pdf_name.endswith(".pdf"):
+            pdf_name = pdf_name + ".pdf"
+        text = get_text(self.path_to_dataset + 'test2/' + pdf_name)
+        if text is None:
+            print(f'Cannot find {pdf_name}, probably "majitel"')
+            return True
+        text = self.replace_meta(text, pdf_name)
+        x = [text]
+        x = self.vectorizer.transform(x)
+        prediction = self.classifier.predict(x.toarray())
+        if prediction == MAJITEL:
+            return True
+        return False
+
+    def load_data(self, majitelia, statutari):
+        dict_txts = iterate_folder_get_text(majitelia)
+        dict_txts.update(iterate_folder_get_text(statutari))
+        for key in dict_txts:
+            dict_txts[key] = self.replace_meta(dict_txts[key], key)
+        data = list(dict_txts.values())
+        target = [0] * 50 + [1] * 50
+        return data, target
+
+    def replace_meta(self, text, pdf_name):
+        meta_info = pd.read_csv('../../Dataset/' + "all.csv", encoding="utf-8")
+        pdf_name = int(re.findall("[0-9]+", pdf_name)[0])
+        meta_info = meta_info.loc[meta_info['PDF'] == pdf_name]
+        if meta_info.empty:
+            print(f'Nemam {pdf_name}')
+            return text  # TODO chyba -> niektori z ulozenych sa medzitym vymazali
+        _KUV = meta_info['KUV'].values[0].split(' | ')
+        _PVS = meta_info['Meno PVS'].values[0]
+        _OS = meta_info['Opravnena osoba'].values[0]
+        _ADDR = meta_info['Adresa'].values[0]
+        p = re.compile(r'([, ]+[sS]lovensk[aá] republika)')
+        sk = re.search(p, _ADDR)
+        if sk is not None:
+            _ADDR = _ADDR[:sk.start()]
+        for _kuv in _KUV:
+            text = substitute(_kuv, 'KUV', text)
+        text = substitute(_PVS, 'PVS', text)
+        text = substitute(_OS, 'OS', text)
+        text = substitute(_ADDR, 'ADDR', text)
+        return text
 
 
 class Dataset:
@@ -65,10 +144,11 @@ def find_model(path_to_dataset):
         ('clf', SGDClassifier(loss='hinge', penalty='l2', alpha=1e-3, random_state=42,
                               max_iter=5, tol=None)),
     ])
-    ngram_vectorizer = CountVectorizer(min_df=3, max_df=97, strip_accents='unicode', encoding='utf-8')
+    ngram_vectorizer = CountVectorizer(min_df=3, max_df=97, strip_accents='unicode', encoding='utf-8',
+                                       ngram_range=(1, 1))
     X = ngram_vectorizer.fit_transform(data)
     clf = MLPClassifier(solver='lbfgs', random_state=5, verbose=False).fit(X.toarray(), target)
-    #clf = SVC(kernel='sigmoid').fit(X.toarray(), target)
+    # clf = SVC(kernel='sigmoid').fit(X.toarray(), target)
     X_test = ngram_vectorizer.transform(test_data)
     predicted_majitel = clf.predict(X_test.toarray())
     X_test = ngram_vectorizer.transform(test_data2)
@@ -95,7 +175,7 @@ def find_model(path_to_dataset):
     print(f'Precision is {precision}')
     print(f'Recall is {recall}')
     print(f'Recall is {f_score}')
-
+    print(clf.get_params())
     # print(gs_clf.best_score_)
     # for param_name in sorted(parameters.keys()):
     #    print("%s: %r" % (param_name, gs_clf.best_params_[param_name]))
@@ -159,10 +239,11 @@ def preprocessing(data):
            "(pr.j([^ \n])*( |\n)*)?(z( |\n)*)?(tr([^ \n])*( |\n)*)?(.inn([^ \n])*(\n| ))?(a )?(o )?" \
            "(ochrane (pred )?fin([^ \n])* ter([^ \n])* . . zmene a do([^ \n])* nie([^ \n])*( |\n)*" \
            "z.k([^ \n])*( |\n))?((v )?znen([^ \n])*( |\n)nesk([^ \n])*( |\n)pred([^ \n])*)?"
+    pvs2 = "[pP][VvY][S5]"
     for i in range(len(data)):
         # TODO Napojit na NER? Alebo take minimum: prejdi aspon mena a priezviska KUV, ci sa z nich nieco nenajde
         # data[i] = substitute(vm_kuv, "vmkuv", data[i])
-        # data[i] = substitute(pvs, "pvs", data[i])
+        # data[i] = substitute(pvs, "PVS", data[i])
         # data[i] = substitute(kuv, "kuv", data[i])
         # data[i] = substitute(nofo, "nofo", data[i])
         # data[i] = substitute(fo, "fo", data[i])
@@ -171,6 +252,7 @@ def preprocessing(data):
         # data[i] = substitute("KÚV", "kuv", data[i])
         # data[i] = substitute(zakx, "zak1", data[i])
         # data[i] = tokenize(data[i])
+        # data[i] = substitute(pvs2, "PVS", data[i])
         pass
     return data
 

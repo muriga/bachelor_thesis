@@ -122,6 +122,7 @@ class PatternExtract(Classifier):
                "(pr.j([^ \n])*( |\n)*)?(z( |\n)*)?(tr([^ \n])*( |\n)*)?(.inn([^ \n])*(\n| ))?(a )?(o )?" \
                "(ochrane (pred )?fin([^ \n])* ter([^ \n])* . . zmene a do([^ \n])* nie([^ \n])*( |\n)*" \
                "z.k([^ \n])*( |\n))?((v )?znen([^ \n])*( |\n)nesk([^ \n])*( |\n)pred([^ \n])*)?"
+        pvs2 = "[pP][VvY][S5]"
         text = self.substitute(vm_kuv, "vmkuv", text)
         text = self.substitute(pvs, "pvs", text)
         text = self.substitute(kuv, "kuv", text)
