@@ -4,6 +4,7 @@ import pandas as pd
 import re
 from ocr import convert_to_text
 from ocr import get_text
+from utilities import substitute
 
 
 class PatternExtract(Classifier):
@@ -22,7 +23,7 @@ class PatternExtract(Classifier):
         owner = True
         if not pdf_name.endswith(".pdf"):
             pdf_name = pdf_name + ".pdf"
-        text = get_text(self.path_to_dataset + 'test2/' + pdf_name)
+        text = get_text(self.path_to_dataset + 'test/' + pdf_name)
         if text is None:
             print(f'Cannot find {pdf_name}')
             return True
@@ -62,15 +63,10 @@ class PatternExtract(Classifier):
             _ADDR = _ADDR[:sk.start()]
 
         for _kuv in _KUV:
-            text = self.substitute(_kuv, 'KUV', text)
-        text = self.substitute(_PVS, 'PVS', text)
-        text = self.substitute(_OS, 'OS', text)
-        text = self.substitute(_ADDR, 'ADDR', text)
-        return text
-
-    def substitute(self, pattern, to, text):
-        if type(pattern) is str:
-            return re.sub(pattern, to, text, flags=re.ASCII)
+            text = substitute(_kuv, 'KUV', text)
+        text = substitute(_PVS, 'PVS', text)
+        text = substitute(_OS, 'OS', text)
+        text = substitute(_ADDR, 'ADDR', text)
         return text
 
     def itarate_patterns(self):
@@ -123,15 +119,16 @@ class PatternExtract(Classifier):
                "(ochrane (pred )?fin([^ \n])* ter([^ \n])* . . zmene a do([^ \n])* nie([^ \n])*( |\n)*" \
                "z.k([^ \n])*( |\n))?((v )?znen([^ \n])*( |\n)nesk([^ \n])*( |\n)pred([^ \n])*)?"
         pvs2 = "[pP][VvY][S5]"
-        text = self.substitute(vm_kuv, "vmkuv", text)
-        text = self.substitute(pvs, "pvs", text)
-        text = self.substitute(kuv, "kuv", text)
-        text = self.substitute(nofo, "nofo", text)
-        text = self.substitute(fo, "fo", text)
-        text = self.substitute(os, "os", text)
-        text = self.substitute("sp..a", "spĺňa", text)
-        text = self.substitute("KÚV", "kuv", text)
-        text = self.substitute(zakx, "zak1", text)
+        text = substitute(vm_kuv, "vmkuv", text)
+        text = substitute(pvs, "pvs", text)
+        text = substitute(pvs2, "pvs", text)
+        text = substitute(kuv, "kuv", text)
+        text = substitute(nofo, "nofo", text)
+        text = substitute(fo, "fo", text)
+        text = substitute(os, "os", text)
+        text = substitute("sp..a", "spĺňa", text)
+        text = substitute("KÚV", "kuv", text)
+        text = substitute(zakx, "zak1", text)
         return text
 
     def get_patterns(self):
