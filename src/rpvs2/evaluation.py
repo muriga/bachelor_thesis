@@ -28,7 +28,7 @@ def load_test_data(majitel, statuar):
 
 def evaluate(c: template.Classifier):
     c.train(PATH_DATASET + "majitel", PATH_DATASET + "statutar", save_model=True)
-    test_data = load_test_data(PATH_DATASET + "test_majitel", PATH_DATASET + "test_statutar")
+    test_data = load_test_data(PATH_DATASET + "majitel", PATH_DATASET + "statutar")
     #test_data = test_data.sample(frac=1).reset_index(drop=True)
     stats = {}
     correct_majitel = 0
@@ -50,7 +50,7 @@ def evaluate(c: template.Classifier):
         if(row['typ'] == 'statutar'):
             all_statutar += 1
             if answer == 'statutar':
-                print(row['pdf_name'])
+                #print(row['pdf_name'])
                 correct_statutar += 1
             else:
                 print(f'{row["pdf_name"]} was not recognized as statutar')
