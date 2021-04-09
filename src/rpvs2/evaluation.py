@@ -31,7 +31,7 @@ def load_test_data(majitel, statuar):
 def evaluate(c: template.Classifier):
     c.train(PATH_DATASET + "majitel", PATH_DATASET + "statutar", save_model=True)
     test_data = load_test_data(PATH_DATASET + "test_majitel", PATH_DATASET + "test_statutar")
-    test_data = test_data.sample(frac=1).reset_index(drop=True)
+    #test_data = test_data.sample(frac=1).reset_index(drop=True)
     stats = {}
     correct_majitel = 0
     correct_statutar = 0
@@ -61,13 +61,26 @@ def evaluate(c: template.Classifier):
     precision = correct_statutar / positive
     recall = correct_statutar / all_statutar
     f1 = (2 * precision * recall) / (precision + recall)
+    majitel = {
+        "precision": precision,
+        "recall": recall,
+        "f1": f1
+    }
+    result = {"majitel": majitel}
     print(
         f'We had {all_majitel} documents of type "majitel", {correct_majitel / all_majitel * 100}"% of them was classified correctly')
     print(
         f'We had {all_statutar} documents of type "statutar", {correct_statutar / all_statutar * 100}"% of them was classified correctly')
     print(f'On question who is not KUV, just "statutar". Precision = {precision}, recall = {recall}, f1-score = {f1}')
-    precision_majitel = correct_majitel / (all_statutar - correct_statutar + correct_majitel)
-    recall_majitel = correct_majitel / all_majitel
-    f1_majitel = (2 * precision_majitel * recall_majitel) / (precision_majitel + recall_majitel)
+    precision2 = correct_majitel / (all_statutar - correct_statutar + correct_majitel)
+    recall2 = correct_majitel / all_majitel
+    f12 = (2 * precision2 * recall2) / (precision2 + recall2)
+    statutar = {
+        "precision": precision2,
+        "recall": recall2,
+        "f1": f12
+    }
+    result["statutar"] = statutar
     print(
-        f'On question who is KUV, "majitel". Precision = {precision_majitel}, recall = {recall_majitel}, f1-score = {f1_majitel}')
+        f'On question who is KUV, "majitel". Precision = {precision2}, recall = {recall2}, f1-score = {f12}')
+    c.write_desc(result)

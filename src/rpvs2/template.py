@@ -13,3 +13,6 @@ class Classifier:
             lines = f.readlines()
         stop_words = {lines[i].replace('\n', ''): i for i in range(len(lines))}
         return stop_words
+
+    def write_desc(self, results):
+        pass

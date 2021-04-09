@@ -19,6 +19,7 @@ if __name__ == '__main__':
     #testing.pattern_statistics()
     #slearning.find_model(PATH_DATASET)
     a = slearning.SupervisedClassifier(PATH_DATASET)
+    # a.find()
     evaluation.evaluate(a)
     #testing = pattern.PatternExtract(PATH_DATASET)
     #evaluation.evaluate(testing)
