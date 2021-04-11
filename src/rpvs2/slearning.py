@@ -31,20 +31,22 @@ class SupervisedClassifier(Classifier):
         self.nlp = stanza.Pipeline('sk', verbose=False, processors="tokenize")
         self.model_id = tm.strftime("%m-%d-%H%M%S")
         self.vectorizer = None
-        self.description = "CountVectorizer(min_df=13, max_df=100, ngram_range=(1,2))\n" \
+        self.description = "CountVectorizer(min_df=13, max_df=100, ngram_range=(1,2)" \
                            "not:TfidfTransformer(norm='l1', use_idf=True)\n" \
                            "MLPClassifier(solver='lbfgs',activation='relu', max_fun=7500,hidden_layer_sizes=(100,45), random_state=5, verbose=False)"
-       # self.transformer = TfidfTransformer(norm='l1', use_idf=True)
+
+    # self.transformer = TfidfTransformer(norm='l1', use_idf=True)
 
     def train(self, path_owners: str, path_managers: str, path_pretrained: str = None, save_model: bool = False):
         if path_pretrained is not None:
             self.classifier = load(path_pretrained)
             return
         texts, target = self.load_data(path_owners, path_managers)
-        self.vectorizer = CountVectorizer(min_df=13, max_df=100, ngram_range=(1,2))
+        self.vectorizer = CountVectorizer(min_df=13, max_df=100, ngram_range=(1, 2))
         dt_matrix = self.vectorizer.fit_transform(texts)
-        #dt_matrix = self.transformer.fit_transform(dt_matrix)
-        self.classifier = MLPClassifier(solver='lbfgs',activation='relu', max_fun=7500, hidden_layer_sizes=(100,45), random_state=5, verbose=False).fit(dt_matrix.toarray(), target)
+        # dt_matrix = self.transformer.fit_transform(dt_matrix)
+        self.classifier = MLPClassifier(solver='lbfgs', activation='relu', max_fun=7500, hidden_layer_sizes=(100, 45),
+                                        random_state=5, verbose=False).fit(dt_matrix.toarray(), target)
         if save_model:
             dump(self.classifier, PATH_MODELS + "model_" + self.model_id + ".joblib")
 
@@ -61,7 +63,7 @@ class SupervisedClassifier(Classifier):
             ('clf', MLPClassifier()),
         ])
         parameters = {
-            #'vect__min_df': (1, 2),
+            # 'vect__min_df': (1, 2),
             'vect__min_df': (1, 2, 3, 4, 5, 8, 10, 13),
             'vect__max_df': (1.0, 0.5, 0.75, 0.9, 97, 98),
             'vect__ngram_range': ((1, 1), (1, 2), (1, 3)),
@@ -71,7 +73,7 @@ class SupervisedClassifier(Classifier):
             'clf__solver': ('lbfgs', 'adam'),
             'clf__alpha': (0.001, 0.0001, 0.005),
             'clf__learning_rate_init': (0.01, 0.005, 0.001, 0.0005),
-            'clf__hidden_layer_sizes': ((100,), (100,100), (100,10))
+            'clf__hidden_layer_sizes': ((100,), (100, 100), (100, 10))
         }
         grid_search = RandomizedSearchCV(pipeline, parameters, n_jobs=2, verbose=2)
         print("Performing grid search...")
@@ -95,7 +97,7 @@ class SupervisedClassifier(Classifier):
     def write_desc(self, results):
         text = "\t\tPrecision\tRecall\tF1score\nMajitel\t" + str(results['majitel']['precision']) + "\t" \
                + str(results['majitel']['recall']) + "\t\t" + str(results['majitel']['f1']) + "\n" \
-               + "Statutar\t" +  str(results['majitel']['precision']) + "\t" + str(results['majitel']['recall']) \
+               + "Statutar\t" + str(results['majitel']['precision']) + "\t" + str(results['majitel']['recall']) \
                + "\t" + str(results['majitel']['f1']) + "\n" + self.description
         with open(PATH_MODELS + "desc_" + self.model_id + ".txt", "w", encoding="utf-8") as file:
             file.write(text)
@@ -110,7 +112,7 @@ class SupervisedClassifier(Classifier):
         text = replace_meta(text, pdf_name)
         x = [text]
         x = self.vectorizer.transform(x)
-        #x = self.transformer.transform(x)
+        # x = self.transformer.transform(x)
         prediction = self.classifier.predict(x.toarray())
         if prediction == MAJITEL:
             return True
@@ -130,6 +132,7 @@ class SupervisedClassifier(Classifier):
         tokenized = [token.text for sentence in doc.sentences for token in sentence.words]
         # print(tokenized)
         return tokenized
+
 
 def load_testing(path_to_dataset):
     test_dict_data = iterate_folder_get_text(path_to_dataset + "test_majitel")

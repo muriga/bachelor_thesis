@@ -10,3 +10,4 @@ test2
 test1
 tfdif.csv
 *.joblib
+models/
