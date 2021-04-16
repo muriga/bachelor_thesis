@@ -30,27 +30,42 @@ def substitute(pattern, to, text):
     return text
 
 
-def replace_meta(text, pdf_name):
+def get_meta_by_pdfname(pdf_name):
     meta_info = pd.read_csv('../../Dataset/' + "all.csv", encoding="utf-8")
     pdf_name = int(re.findall("[0-9]+", pdf_name)[0])
     meta_info = meta_info.loc[meta_info['PDF'] == pdf_name]
     if meta_info.empty:
         print(f'Nemam {pdf_name}')
-        return text
-    _KUV = meta_info['KUV'].values[0].split(' | ')
+        return None
+    meta_data = {}
+    meta_data['kuv'] = meta_info['KUV'].values[0].split(' | ')
     # TODO Titul. meno priezvisko: treba sparsovat nech nahradi aj bez titulu
-    _PVS = meta_info['Meno PVS'].values[0]
-    _OS = meta_info['Opravnena osoba'].values[0]
-    _ADDR = meta_info['Adresa'].values[0]
+    meta_data['pvs'] = meta_info['Meno PVS'].values[0]
+    meta_data['os'] = meta_info['Opravnena osoba'].values[0]
+    meta_data['addr'] = meta_info['Adresa'].values[0]
+    return meta_data
+
+
+def get_meta_from_list(meta_data):
+    data = {
+        'kuv': meta_data[8].split(' | '),
+        'pvs': meta_data[0],
+        'os': meta_data[7],
+        'addr': meta_data[3]
+    }
+    return data
+
+
+def replace_meta(text, meta_data):
     p = re.compile(r'([, ]+[sS]lovensk[aá] republika)')
-    sk = re.search(p, _ADDR)
+    sk = re.search(p, meta_data['addr'])
     if sk is not None:
-        _ADDR = _ADDR[:sk.start()]
-    for _kuv in _KUV:
+        meta_data['addr'] = meta_data['addr'][:sk.start()]
+    for _kuv in meta_data['kuv']:
         text = substitute(_kuv, 'KUV', text)
-    text = substitute(_PVS, 'PVS', text)
-    text = substitute(_OS, 'OS', text)
-    text = substitute(_ADDR, 'ADDR', text)
+    text = substitute(meta_data['pvs'], 'PVS', text)
+    text = substitute(meta_data['os'], 'OS', text)
+    text = substitute(meta_data['addr'], 'ADDR', text)
     return text
 
 

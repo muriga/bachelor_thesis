@@ -19,52 +19,73 @@ class PatternExtract(Classifier):
         self.helped = [0 for x in self.patterns]
         self.confused = [0 for x in self.patterns]
 
-    def play(self, pdf_name, document_class):
+    def get_sentences(self, pdf_name, using_stanza=False):
         if not pdf_name.endswith(".pdf"):
             pdf_name = pdf_name + ".pdf"
-        text = get_text(self.path_to_dataset + 'test2/' + pdf_name)
+        text = get_text(self.path_to_dataset + 'test_all/' + pdf_name)
         text = self.replace_meta(text, pdf_name)
         text = self.preprocessing(text)
-        tokenized_text = self.tokenize(text)
+        if using_stanza:
+            text = self.tokenize(text)
         patterns = ["([^.]| z \\.| [0-9$§]+ . | p.sm \\. | ods \\.)*pvs([^.]| z \\.|[0-9$§]+ \\. )*kuv([^.]| "
                     "z \\.| [0-9$§]+ . | p.sm \\. | ods \\.)*",
                     "([^.]| z \\.| [0-9$§]+ . | p.sm \\. | ods \\.)*kuv([^.]| z \\.|[0-9$§]+ \\. )*pvs([^.]| "
                     "z \\.| [0-9$§]+ . | p.sm \\. | ods \\.)*"]
-        sentences, tokenized_sentences = self.do(patterns, text, tokenized_text)
-        while len(sentences) > len(tokenized_sentences):
-            tokenized_sentences.append(" ")
-        while len(sentences) < len(tokenized_sentences):
-            sentences.append(" ")
-        label = [document_class for _ in sentences]
-        return sentences, tokenized_sentences, label
-        #found = re.finditer(
-        #    r'([^.]| z \\.| [0-9$§]+ . | p.sm \\. | ods \\.)*vmkuv([^.]| z \\.|[0-9$§]+ \\. )*kuv([^.]| '
-        #    r'z \\.| [0-9$§]+ . | p.sm \\. | ods \\.)*', text, flags=re.UNICODE)
-        #found = re.finditer(
-        #    r'([^.]| z \\.| [0-9$§]+ . | p.sm \\. | ods \\.)*kuv([^.]| z \\.|[0-9$§]+ \\. )*vmkuv([^.]| '
-        #    r'z \\.| [0-9$§]+ . | p.sm \\. | ods \\.)*', text, flags=re.UNICODE)
+        sentences = self.do_get_sentences(patterns, text)
+        return sentences
 
-    def do(self, patterns, text, tokenized_text):
+    def do_get_sentences(self, patterns, text):
         sentences = []
-        tokenized_sentences = []
         for pattern in patterns:
             found = re.finditer(pattern, text, flags=re.UNICODE)
-            found_tokenized = re.finditer(pattern, tokenized_text, flags=re.UNICODE)
-            sentences, tokenized_sentences = self.append(sentences, tokenized_sentences, found, found_tokenized)
-        return sentences, tokenized_sentences
+            sentences = self.append(sentences, found)
+        return sentences
 
-    def append(self, sentences, tokenized_sentences, found, found_tokenized):
+    def append(self, sentences, found):
         for i in found:
             sentences.append(i.group())
-        for i in found_tokenized:
-            tokenized_sentences.append(i.group())
-        return sentences, tokenized_sentences
+        return sentences
+
+    # def play(self, pdf_name, document_class):
+    #     if not pdf_name.endswith(".pdf"):
+    #         pdf_name = pdf_name + ".pdf"
+    #     text = get_text(self.path_to_dataset + 'test2/' + pdf_name)
+    #     text = self.replace_meta(text, pdf_name)
+    #     text = self.preprocessing(text)
+    #     tokenized_text = self.tokenize(text)
+    #     patterns = ["([^.]| z \\.| [0-9$§]+ . | p.sm \\. | ods \\.)*pvs([^.]| z \\.|[0-9$§]+ \\. )*kuv([^.]| "
+    #                 "z \\.| [0-9$§]+ . | p.sm \\. | ods \\.)*",
+    #                 "([^.]| z \\.| [0-9$§]+ . | p.sm \\. | ods \\.)*kuv([^.]| z \\.|[0-9$§]+ \\. )*pvs([^.]| "
+    #                 "z \\.| [0-9$§]+ . | p.sm \\. | ods \\.)*"]
+    #     sentences, tokenized_sentences = self.do(patterns, text, tokenized_text)
+    #     while len(sentences) > len(tokenized_sentences):
+    #         tokenized_sentences.append(" ")
+    #     while len(sentences) < len(tokenized_sentences):
+    #         sentences.append(" ")
+    #     label = [document_class for _ in sentences]
+    #     return sentences, tokenized_sentences, label
+    #
+    # def do(self, patterns, text, tokenized_text):
+    #     sentences = []
+    #     tokenized_sentences = []
+    #     for pattern in patterns:
+    #         found = re.finditer(pattern, text, flags=re.UNICODE)
+    #         found_tokenized = re.finditer(pattern, tokenized_text, flags=re.UNICODE)
+    #         sentences, tokenized_sentences = self.append(sentences, tokenized_sentences, found, found_tokenized)
+    #     return sentences, tokenized_sentences
+    #
+    # def append(self, sentences, tokenized_sentences, found, found_tokenized):
+    #     for i in found:
+    #         sentences.append(i.group())
+    #     for i in found_tokenized:
+    #         tokenized_sentences.append(i.group())
+    #     return sentences, tokenized_sentences
 
     def is_owner(self, pdf_name: str, fact_is_owner) -> bool:
         owner = True
         if not pdf_name.endswith(".pdf"):
             pdf_name = pdf_name + ".pdf"
-        text = get_text(self.path_to_dataset + 'test/' + pdf_name)
+        text = get_text(self.path_to_dataset + 'test_all/' + pdf_name)
         if text is None:
             print(f'Cannot find {pdf_name}')
             return True

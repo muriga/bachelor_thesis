@@ -39,7 +39,7 @@ def evaluate(c: template.Classifier):
     all_statutar = 0
     # print(test_data)
     for index, row in test_data.iterrows():
-        if c.is_owner(row['pdf_name'], row['typ'] == 'majitel'):
+        if c.is_owner_testing(row['pdf_name'], row['typ'] == 'majitel'):
             answer = "majitel"
         else:
             answer = "statutar"

@@ -6,6 +6,7 @@ import ocr
 import pattern
 import evaluation
 import os
+import ui
 
 PATH_DATASET = "../../Dataset/"
 PATH_LIST = "../../Dataset/all.csv"
@@ -53,12 +54,13 @@ if __name__ == '__main__':
     # ocr.iterate_folder_convert_to_text(PATH_DATASET + "statutar", save=True, contains_txt=True)
     # ocr.iterate_folder_convert_to_text(PATH_DATASET + "test_majitel", save=True, contains_txt=True)
     # ocr.iterate_folder_convert_to_text(PATH_DATASET + "all", save=True, contains_txt=True)
-    #testing.pattern_statistics()
     #slearning.find_model(PATH_DATASET)
-    # a = slearning.SupervisedClassifier(PATH_DATASET)
+    #a = slearning.SupervisedClassifier(PATH_DATASET)
     # a.find()
-    # evaluation.evaluate(a)
-    # testing = pattern.PatternExtract(PATH_DATASET)
+    #evaluation.evaluate(a)
+    #testing = pattern.PatternExtract(PATH_DATASET)
+    #evaluation.evaluate(testing)
+    #testing.pattern_statistics()
     # statutar = ['125829', '125602', '124894']
     #for i in statutar:
      #   testing.play(i)
@@ -67,4 +69,6 @@ if __name__ == '__main__':
     #    testing.play(i)
     #evaluation.evaluate(testing)
     # get_save_relation_sentences(testing)
-    slearning.SentenceClassifier(PATH_DATASET + "sentences.csv")
+    #slearning.SentenceClassifier(PATH_DATASET + "sentences.csv")
+    a = ui.continue_finding_statutar(45,53)
+    ui.continue_where_stopped()

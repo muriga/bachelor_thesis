@@ -3,8 +3,7 @@ from ocr import iterate_folder_get_text
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.pipeline import Pipeline
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.svm import SVC
+import fitz
 # TODO tr SGDCClassifier with Nystroem
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import RandomizedSearchCV
@@ -19,8 +18,11 @@ from pprint import pprint
 import time as tm
 from time import time
 import numpy as np
-import logging
-
+import ocr
+from pattern import PatternExtract
+from utilities import get_meta_by_pdfname
+from utilities import get_meta_from_list
+from typing import Union
 PATH_MODELS = "../../models/"
 MAJITEL = 0
 STATUTAR = 1
@@ -34,22 +36,29 @@ class SupervisedClassifier(Classifier):
         self.nlp = stanza.Pipeline('sk', verbose=False, processors="tokenize")
         self.model_id = tm.strftime("%m-%d-%H%M%S")
         self.vectorizer = None
-        self.description = "CountVectorizer(min_df=13, max_df=100, ngram_range=(1,2)" \
+        self.description = "CountVectorizer(min_df=7, max_df=96, ngram_range=(1, 8), analyzer='char_wb')" \
                            "not:TfidfTransformer(norm='l1', use_idf=True)\n" \
                            "MLPClassifier(solver='lbfgs',activation='relu', max_fun=7500,hidden_layer_sizes=(100,45), random_state=5, verbose=False)"
-
+        #self.regex = PatternExtract(path_dataset)
+        #self.sentences_classifier = SentenceClassifier(path_dataset + "sentences.csv")
+        self.bigram_vectorizer = CountVectorizer(min_df=5, ngram_range=(2,2))
     # self.transformer = TfidfTransformer(norm='l1', use_idf=True)
 
     def train(self, path_owners: str, path_managers: str, path_pretrained: str = None, save_model: bool = False):
         if path_pretrained is not None:
             self.classifier = load(path_pretrained)
             return
-        texts, target = self.load_data(path_owners, path_managers)
-        self.vectorizer = CountVectorizer(min_df=13, max_df=100, ngram_range=(1, 2))
-        dt_matrix = self.vectorizer.fit_transform(texts)
+        texts, target, pdf_names = self.load_data(path_owners, path_managers)
+        self.vectorizer = CountVectorizer(min_df=7, max_df=96, ngram_range=(1, 8), analyzer='char_wb')
+        dt_matrix = self.vectorizer.fit_transform(texts).toarray()
+        # dt_matrix = self.add_sentences_features(dt_matrix, pdf_names)
         # dt_matrix = self.transformer.fit_transform(dt_matrix)
-        self.classifier = MLPClassifier(solver='lbfgs', activation='relu', max_fun=7500, hidden_layer_sizes=(100, 45),
-                                        random_state=5, verbose=False).fit(dt_matrix.toarray(), target)
+
+        bigrams = self.bigram_vectorizer.fit_transform(texts)
+        dt_matrix = np.column_stack((dt_matrix, bigrams.toarray()))
+
+        self.classifier = MLPClassifier(solver='lbfgs', activation='relu', max_fun=7500, hidden_layer_sizes=(100, 50),
+                                        random_state=5, verbose=False).fit(dt_matrix, target)
         if save_model:
             dump(self.classifier, PATH_MODELS + "model_" + self.model_id + ".joblib")
 
@@ -97,38 +106,76 @@ class SupervisedClassifier(Classifier):
         df = pd.DataFrame(grid_search.cv_results_)
         df.to_csv("mlp.csv")
 
+    def add_sentences_features(self, dt_matrix, pdf_names):
+        features = []
+        for pdf in pdf_names:
+            sentences = self.regex.get_sentences(pdf)
+            pdf_feauters = {
+                "0": 0,
+                "1": 0,
+                "2": 0
+            }
+            for sentence in sentences:
+                predicted = self.sentences_classifier.predict(sentence)
+                pdf_feauters[predicted] += 1
+            features.append(list(pdf_feauters.values())[1:])
+        arr = np.array(features)
+        complete_features = np.column_stack((dt_matrix, arr))
+        return complete_features
+
+
     def write_desc(self, results):
         text = "\t\tPrecision\tRecall\tF1score\nMajitel\t" + str(results['majitel']['precision']) + "\t" \
                + str(results['majitel']['recall']) + "\t\t" + str(results['majitel']['f1']) + "\n" \
-               + "Statutar\t" + str(results['majitel']['precision']) + "\t" + str(results['majitel']['recall']) \
-               + "\t" + str(results['majitel']['f1']) + "\n" + self.description
+               + "Statutar\t" + str(results['statutar']['precision']) + "\t" + str(results['statutar']['recall']) \
+               + "\t" + str(results['statutar']['f1']) + "\n" + self.description
         with open(PATH_MODELS + "desc_" + self.model_id + ".txt", "w", encoding="utf-8") as file:
             file.write(text)
 
-    def is_owner(self, pdf_name: str, fact_is_owner) -> bool:
+    def is_owner_testing(self, pdf_name: str, fact_is_owner) -> bool:
         if not pdf_name.endswith(".pdf"):
             pdf_name = pdf_name + ".pdf"
-        text = get_text(self.path_to_dataset + 'test/' + pdf_name)
+        text = get_text(self.path_to_dataset + 'test_all/' + pdf_name)
         if text is None:
-            print(f'Cannot find {pdf_name}, probably "majitel"')
-            return True
-        text = replace_meta(text, pdf_name)
+            print(f'Cannot find {pdf_name}')
+        #TODO get_metadata? replace metadata from list
+        meta_data = get_meta_by_pdfname(pdf_name)
+        text = replace_meta(text, meta_data)
         x = [text]
-        x = self.vectorizer.transform(x)
+        x = self.vectorizer.transform(x).toarray()
         # x = self.transformer.transform(x)
-        prediction = self.classifier.predict(x.toarray())
+        # x = self.add_sentences_features(x, [pdf_name])
+        bigram = self.bigram_vectorizer.transform([text])
+        x = np.column_stack((x, bigram.toarray()))
+        prediction = self.classifier.predict(x)
         if prediction == MAJITEL:
-            return True
+            return True  # self.regex.is_owner(pdf_name, False)
+        return False
+
+    def is_owner(self, meta_data: list, pdf: Union[str, fitz.Document]):
+        meta_data = get_meta_from_list(meta_data)
+        text = ocr.convert_to_text(pdf)
+        text = replace_meta(text, meta_data)
+        x = [text]
+        x = self.vectorizer.transform(x).toarray()
+        # x = self.transformer.transform(x)
+        # x = self.add_sentences_features(x, [pdf_name])
+        bigram = self.bigram_vectorizer.transform([text])
+        x = np.column_stack((x, bigram.toarray()))
+        prediction = self.classifier.predict(x)
+        if prediction == MAJITEL:
+            return True  # self.regex.is_owner(pdf_name, False)
         return False
 
     def load_data(self, majitelia, statutari):
         dict_txts = iterate_folder_get_text(majitelia)
         dict_txts.update(iterate_folder_get_text(statutari))
         for key in dict_txts:
-            dict_txts[key] = replace_meta(dict_txts[key], key)
+            meta_data = get_meta_by_pdfname(key)
+            dict_txts[key] = replace_meta(dict_txts[key], meta_data)
         data = list(dict_txts.values())
         target = [0] * 50 + [1] * 50
-        return data, target
+        return data, target, [*dict_txts]
 
     def tokenize(self, text):
         doc = self.nlp(text)
@@ -162,24 +209,27 @@ class SentenceClassifier():
         self.description = "CountVectorizer(min_df=13, max_df=100, ngram_range=(1,2)" \
                            "not:TfidfTransformer(norm='l1', use_idf=True)\n" \
                            "MLPClassifier(solver='lbfgs',activation='relu', max_fun=7500,hidden_layer_sizes=(100,45), random_state=5, verbose=False)"
-        self.test = self.train()
-        self.evaluate()
+        #self.test = self.train()
+        self.train()
+        #self.evaluate()
 
     def train(self):
         majitel, statutar, null = self.load()
-        training_set = majitel[:94]
-        training_set = np.append(training_set, statutar[:96], axis=0)
-        training_set = np.append(training_set, null[:538], axis=0)
-        testing_set = majitel[94:]
-        testing_set = np.append(testing_set, statutar[96:], axis=0)
-        testing_set = np.append(testing_set, null[538:], axis=0)
+        #for i in range(len(majitel)):
+        #    majitel[i][1] = 0
+        training_set = majitel
+        training_set = np.append(training_set, statutar, axis=0)
+        training_set = np.append(training_set, null, axis=0)
+        #testing_set = majitel[94:]
+        #testing_set = np.append(testing_set, statutar[96:], axis=0)
+        #testing_set = np.append(testing_set, null[538:], axis=0)
         #np.random.set_state({"state": 5})
         np.random.shuffle(training_set)
         x = training_set[0:, 0]
         y = training_set[0:, 1].astype('int')
         x = self.vectorizer.fit_transform(x)
         self.classifier.fit(x, y)
-        return testing_set
+        #return testing_set
 
     def load(self):
         data_frame = pd.read_csv(self.path_to_cv)
@@ -190,6 +240,10 @@ class SentenceClassifier():
         null = data_frame.loc[data_frame["Label"] == 0]
         null = null[["Sentence", "Label"]].drop_duplicates().to_numpy()
         return majitel, statutar, null
+
+    def predict(self, sentence):
+        x = self.vectorizer.transform([sentence])
+        return self.classifier.predict(x)[0].astype('str').item()
 
     def evaluate(self):
         print(self.vectorizer.get_feature_names())
@@ -221,10 +275,10 @@ class SentenceClassifier():
         print(f'majitelia {correct_ans["1"]} z {all_ans["1"]}')
         print(f'statutari {correct_ans["2"]} z {all_ans["2"]}')
         print(f'null {correct_ans["0"]} z {all_ans["0"]}')
-        precision = correct_ans["1"]/all_ans["1"]*100
-        recall = correct_ans["1"]/all_majitel*100
-        f1 = (2 * precision * recall) / (precision + recall)
-        print(f'Majitelia, precision:{precision}, recall:{recall}, f1:{f1}')
+        #precision = correct_ans["1"]/all_ans["1"]*100
+        #recall = correct_ans["1"]/all_majitel*100
+        #f1 = (2 * precision * recall) / (precision + recall)
+        #print(f'Majitelia, precision:{precision}, recall:{recall}, f1:{f1}')
         precision = correct_ans["2"]/all_ans["2"]*100
         recall = correct_ans["2"]/all_statutar*100
         f1 = (2 * precision * recall) / (precision + recall)

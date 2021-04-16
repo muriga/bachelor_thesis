@@ -1,3 +1,5 @@
+import fitz
+
 class Classifier:
 
     def train(self, path_owners: str, path_managers: str, path_pretrained: str = None, save_model: bool = False):
@@ -6,6 +8,9 @@ class Classifier:
 
     def is_owner(self, pdf_name: str) -> bool:
         """Method tries to extract information from pdf, if it describes KUV who is owner."""
+        pass
+
+    def is_owner(self, meta_data: list, pdf: fitz.Document):
         pass
 
     def get_stop_words(self):
