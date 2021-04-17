@@ -21,7 +21,7 @@ import numpy as np
 import ocr
 from pattern import PatternExtract
 from utilities import get_meta_by_pdfname
-from utilities import get_meta_from_list
+from utilities import translate_meta
 from typing import Union
 PATH_MODELS = "../../models/"
 MAJITEL = 0
@@ -155,7 +155,7 @@ class SupervisedClassifier(Classifier):
         return False
 
     def is_owner(self, meta_data: list, pdf: Union[str, fitz.Document]):
-        meta_data = get_meta_from_list(meta_data)
+        meta_data = translate_meta(meta_data)
         text = ocr.convert_to_text(pdf)
         text = replace_meta(text, meta_data)
         x = [text]

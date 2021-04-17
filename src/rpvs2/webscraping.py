@@ -5,11 +5,12 @@ import fitz
 
 BASE_URL = "https://rpvs.gov.sk/rpvs/Partner/Partner/Detail/"
 
-def append_if_exists(data, dict, key):
+
+def append_if_exists(meta_data, dict, key):
     if key in dict:
-        data.append(dict[key])
+        meta_data[key] = dict[key]
     else:
-        data.append("NULL")
+        meta_data[key] = "NULL"
 
 
 # z div tried "form-grouo m-b-xs" vyberie slovnik atribut:hodnota
@@ -24,29 +25,31 @@ def get_attr_values_pairs(panel_body):
 
 
 # Toto prejde div PVS. Ukladá do zoznamu obchodn0 meno, ico atd. Tento zoznam potom vloží do zoznamu data
-def pvs_processing(data, tag):
+def pvs_processing(meta_data, tag):
     d = get_attr_values_pairs(tag)
-    append_if_exists(data, d, "Obchodné meno")
-    append_if_exists(data, d, "IČO")
-    append_if_exists(data, d, "Právna forma")
-    append_if_exists(data, d, "Adresa sídla / miesto podnikania / bydliska")
-    append_if_exists(data, d, "Dátum zápisu")
-    append_if_exists(data, d, "Dátum výmazu")
-    append_if_exists(data, d, "Číslo vložky")
+    append_if_exists(meta_data, d, "Obchodné meno")
+    append_if_exists(meta_data, d, "IČO")
+    append_if_exists(meta_data, d, "Právna forma")
+    append_if_exists(meta_data, d, "Adresa sídla / miesto podnikania / bydliska")
+    append_if_exists(meta_data, d, "Dátum zápisu")
+    append_if_exists(meta_data, d, "Dátum výmazu")
+    append_if_exists(meta_data, d, "Číslo vložky")
 
 
 # Najde obchodne meno opravnenej osoby, z data najde posledny zaznam, prida do neho toto meno
-def os_processing(data, tag):
+def os_processing(meta_data, tag):
     d = get_attr_values_pairs(tag)
-    append_if_exists(data, d, 'Obchodné meno')
+    if d is not None:
+        d['os'] = d.pop('Obchodné meno')
+    append_if_exists(meta_data, d, 'os')
 
 
 # Najde meno a priezvisko kazdeho KUV, spravi z nich jeden string s oddelovacom ' | '.
 # Tento string potom pridá do posledneho záznamu z data
-def kuv_processing(data, tag):
+def kuv_processing(meta_data, tag):
     table_body = tag.find("tbody")
-    if table_body == None:
-        data.append("NULL")
+    if table_body is None:
+        meta_data['KUV'] = 'NULL'
         return
     rows = table_body.find_all("th")
     names = ""
@@ -55,18 +58,19 @@ def kuv_processing(data, tag):
         if names != "":
             names = names + " | ";
         names = names + name
-    data.append(names)
+    meta_data['KUV'] = names
 
 
-def download_pdf(data, block):
+def download_pdf(meta_data, block):
     _URL = "https://rpvs.gov.sk/"
     a = block.find("a")
     if a is None:
-        data.append("NULL")
+        meta_data['pdf'] = 'NULL'
         return None
     link = a["href"]
-    doc_serial_num = link[31:]
-    data.append(doc_serial_num)
+    pdf_name = link[31:]
+
+    meta_data['pdf'] = pdf_name
     url = _URL + link
     http = urllib3.PoolManager()
 
@@ -83,7 +87,7 @@ def process_detail_page(num):
     soup = BeautifulSoup(html, "html.parser")
 
     blocks = soup.find_all("div", {"class": "panel panel-default"})
-    meta_data = []
+    meta_data = {}
     for block in blocks:
         name = block.find_all("div", {"class": "panel-heading"})
         headlines = name[0].find_all("h2")

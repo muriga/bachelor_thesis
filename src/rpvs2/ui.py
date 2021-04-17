@@ -50,11 +50,12 @@ def save(meta_data, pdf, result):
         state = "statutar"
     else:
         state = "neregistrovany"
-    meta_data.append(state)
+    meta_data['typ'] = state
+    #meta_data.to_csv(CHECKED_CSV_PATH, mode='a', encoding='utf-8', index=False, header=False)
     with open(CHECKED_CSV_PATH, 'a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file, dialect='excel')
-        writer.writerow(meta_data)
+        writer.writerow(list(meta_data.values()))
     if result == STATUTAR:
-        pdf_name = RESULTS_FOLDER_PATH + '/' + str(meta_data[9]) + ".pdf"
+        pdf_name = RESULTS_FOLDER_PATH + '/' + str(meta_data['pdf']) + ".pdf"
         pdf.save(pdf_name)
 

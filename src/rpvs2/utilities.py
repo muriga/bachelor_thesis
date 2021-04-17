@@ -46,12 +46,12 @@ def get_meta_by_pdfname(pdf_name):
     return meta_data
 
 
-def get_meta_from_list(meta_data):
+def translate_meta(meta_data):
     data = {
-        'kuv': meta_data[8].split(' | '),
-        'pvs': meta_data[0],
-        'os': meta_data[7],
-        'addr': meta_data[3]
+        'kuv': meta_data['KUV'].split(' | '),
+        'pvs': meta_data['Obchodné meno'],
+        'os': meta_data['os'],
+        'addr': meta_data['Adresa sídla / miesto podnikania / bydliska']
     }
     return data
 
