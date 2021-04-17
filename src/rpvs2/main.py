@@ -70,6 +70,5 @@ if __name__ == '__main__':
     #evaluation.evaluate(testing)
     # get_save_relation_sentences(testing)
     #slearning.SentenceClassifier(PATH_DATASET + "sentences.csv")
-    ui.continue_where_stopped()
-    ui.continue_where_stopped()
-    ui.continue_where_stopped()
+    a = ui.Handler()
+    a.continue_where_stopped(9)
