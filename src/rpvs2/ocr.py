@@ -208,5 +208,5 @@ def balance_skew(image):
         rotation = search('(?<=Rotate: )\d+', information).group(0)
         return image.rotate(-int(rotation))
     except TesseractError:
-        print("Havent rotated - tesseract error")
+        pass
     return image

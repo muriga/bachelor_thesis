@@ -7,6 +7,7 @@ import fitz
 from slearning import SupervisedClassifier
 from time import sleep
 import csv
+import pandas as pd
 
 PATH_DATASET = "../../Dataset/"
 NEREGISTROVANY = 0
@@ -23,16 +24,15 @@ def start_findig_statutar(to_num_pvs: int):
 def continue_where_stopped():
     if not os.path.exists('vysledky'):
         os.makedirs('vysledky')
-    with open('vysledky/skontrolovane.csv', 'r') as file:
-        #reader = csv.reader(file, delimiter='')
-        last_row = file.readlines()[-1] #TODO that not work, use rather pandas
-    print(last_row)
+    last_row = pd.read_csv('vysledky/skontrolovane.csv').tail(1)
+    last_read = last_row.iloc[0][6]
+    continue_finding_statutar(last_read, to_num_pvs=last_read+100)
 
 
 
 def continue_finding_statutar(from_num_pvs: int, to_num_pvs: int):
     classifier = SupervisedClassifier(PATH_DATASET)
-    classifier.train(PATH_DATASET + "majitel", PATH_DATASET + "statutar", save_model=True)
+    classifier.train(PATH_DATASET + "majitel", PATH_DATASET + "statutar", path_pretrained='../../models/model_04-17-082028.joblib')
     for i in range(from_num_pvs, to_num_pvs):
         meta_data, pdf = process_detail_page(i)
         if pdf is None:
@@ -93,19 +93,14 @@ def pvs_processing(data, tag):
 # Najde obchodne meno opravnenej osoby, z data najde posledny zaznam, prida do neho toto meno
 def os_processing(data, tag):
     d = get_attr_values_pairs(tag)
-    if "Obchodné meno" in d:
-        data.append(d["Obchodné meno"])
-    else:
-        data.append("NULL")
+    append_if_exists(data, d, 'Obchodné meno')
 
 
 # Najde meno a priezvisko kazdeho KUV, spravi z nich jeden string s oddelovacom ' | '.
 # Tento string potom pridá do posledneho záznamu z data
-# Okrem toho stiahne pdf, jeho cislo tiez prida do posledneho zaznamu. Ak nie je, prida NULL
 def kuv_processing(data, tag):
     table_body = tag.find("tbody")
     if table_body == None:
-        data.append("NULL")
         data.append("NULL")
         return
     rows = table_body.find_all("th")
@@ -129,7 +124,6 @@ def download_pdf(data, block):
     data.append(doc_serial_num)
     url = _URL + link
     http = urllib3.PoolManager()
-    doc_name = "../Dataset/all/" + doc_serial_num + ".pdf"
 
     request = http.request('GET', url, preload_content=False)
     bytes_pdf = request.data

@@ -35,7 +35,7 @@ class SupervisedClassifier(Classifier):
         self.classifier = None
         self.nlp = stanza.Pipeline('sk', verbose=False, processors="tokenize")
         self.model_id = tm.strftime("%m-%d-%H%M%S")
-        self.vectorizer = None
+        self.vectorizer = CountVectorizer(min_df=7, max_df=96, ngram_range=(1, 8), analyzer='char_wb')
         self.description = "CountVectorizer(min_df=7, max_df=96, ngram_range=(1, 8), analyzer='char_wb')" \
                            "not:TfidfTransformer(norm='l1', use_idf=True)\n" \
                            "MLPClassifier(solver='lbfgs',activation='relu', max_fun=7500,hidden_layer_sizes=(100,45), random_state=5, verbose=False)"
@@ -47,9 +47,11 @@ class SupervisedClassifier(Classifier):
     def train(self, path_owners: str, path_managers: str, path_pretrained: str = None, save_model: bool = False):
         if path_pretrained is not None:
             self.classifier = load(path_pretrained)
+            texts, target, pdf_names = self.load_data(path_owners, path_managers)
+            self.vectorizer.fit(texts)
+            self.bigram_vectorizer.fit(texts)
             return
         texts, target, pdf_names = self.load_data(path_owners, path_managers)
-        self.vectorizer = CountVectorizer(min_df=7, max_df=96, ngram_range=(1, 8), analyzer='char_wb')
         dt_matrix = self.vectorizer.fit_transform(texts).toarray()
         # dt_matrix = self.add_sentences_features(dt_matrix, pdf_names)
         # dt_matrix = self.transformer.fit_transform(dt_matrix)

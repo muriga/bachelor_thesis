@@ -11,3 +11,4 @@ test1
 tfdif.csv
 *.joblib
 models/
+vysledky/
