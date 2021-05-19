@@ -39,7 +39,6 @@ def get_meta_by_pdfname(pdf_name):
         return None
     meta_data = {}
     meta_data['kuv'] = meta_info['KUV'].values[0].split(' | ')
-    # TODO Titul. meno priezvisko: treba sparsovat nech nahradi aj bez titulu
     meta_data['pvs'] = meta_info['Meno PVS'].values[0]
     meta_data['os'] = meta_info['Opravnena osoba'].values[0]
     meta_data['addr'] = meta_info['Adresa'].values[0]

@@ -1,6 +1,7 @@
 import template
 import os
 import pandas as pd
+from utilities import get_meta_by_pdfname
 
 """
 Tento modul sa stara o testovanie jednotlivých modelov.
@@ -22,7 +23,7 @@ def load_test_data(majitel, statuar):
     for file in os.listdir(directory):
         filename = os.fsdecode(file)
         if (filename.endswith(".pdf")):
-            next = ["statutar", filename, ""]
+            next = ["statutar", filename.removesuffix(".pdf"), ""]
             data.append(next)
     df = pd.DataFrame(data, columns=['typ', 'pdf_name', 'classified_as'])
     return df
@@ -41,7 +42,8 @@ def evaluate(c: template.Classifier):
     all_statutar = 0
     # print(test_data)
     for index, row in test_data.iterrows():
-        if c.is_owner_testing(row['pdf_name'], row['typ'] == 'majitel'):
+        if c.is_owner(get_meta_by_pdfname(row['pdf_name']), row['pdf_name']):
+        # if c.is_owner(row['pdf_name'], row['typ'] == 'majitel'):
             answer = "majitel"
         else:
             answer = "statutar"

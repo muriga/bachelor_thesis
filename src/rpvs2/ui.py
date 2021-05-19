@@ -1,5 +1,5 @@
 import os
-from slearning import SupervisedClassifier
+from slearning import MLPClassifierBoW
 import csv
 import pandas as pd
 from webscraping import process_detail_page
@@ -16,7 +16,7 @@ STATUTAR = 2
 class Handler:
 
     def __init__(self):
-        self.classifier = SupervisedClassifier(PATH_DATASET)
+        self.classifier = MLPClassifierBoW(PATH_DATASET)
         self.classifier.train(PATH_DATASET + "majitel", PATH_DATASET + "statutar", path_pretrained=PATH_MODEL)
 
     def start_findig_statutar(self, to_num_pvs: int):

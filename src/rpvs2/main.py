@@ -55,15 +55,17 @@ if __name__ == '__main__':
     # ocr.iterate_folder_convert_to_text(PATH_DATASET + "test_majitel", save=True, contains_txt=True)
     # ocr.iterate_folder_convert_to_text(PATH_DATASET + "all", save=True, contains_txt=True)
 
-    t = slearning.SentenceClassifier(PATH_DATASET + "sentences.csv")
-    t.train()
+    # t = slearning.SentenceClassifier(PATH_DATASET + "sentences.csv")
+    # t.train()
 
 
-    #testing = slearning.SupervisedClassifier(PATH_DATASET)
-    #evaluation.evaluate(testing)
-    #testing_pattern = pattern.PatternExtract(PATH_DATASET)
-    #evaluation.evaluate(testing_pattern)
-    #testing_pattern.pattern_statistics()
+    # testing = slearning.MLPClassifierBoW(PATH_DATASET)
+    # evaluation.evaluate(testing)
+    # testing_pattern = pattern.PatternExtract(PATH_DATASET)
+    # evaluation.evaluate(testing_pattern)
+
+    t = slearning.MLPClassifierWSent(PATH_DATASET)
+    evaluation.evaluate(t)
 
     #a = ui.Handler()
     #a.continue_where_stopped(2)
