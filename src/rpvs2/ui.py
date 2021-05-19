@@ -5,8 +5,8 @@ import pandas as pd
 from webscraping import process_detail_page
 
 PATH_DATASET = "../../Dataset/"
-RESULTS_FOLDER_PATH = "vysledky"
-CHECKED_CSV_PATH = RESULTS_FOLDER_PATH + "/skontrolovane.csv"
+RESULTS_FOLDER_PATH = "../../online_test_vysledky/"
+CHECKED_CSV_PATH = RESULTS_FOLDER_PATH + "skontrolovane.csv"
 PATH_MODEL = '../../models/model_04-17-082028.joblib'
 NEREGISTROVANY = 0
 MAJITEL = 1
@@ -22,7 +22,7 @@ class Handler:
     def start_findig_statutar(self, to_num_pvs: int):
         if not os.path.exists(RESULTS_FOLDER_PATH):
             os.makedirs(RESULTS_FOLDER_PATH)
-        self.continue_finding_statutar(1, to_num_pvs)
+        self.continue_finding_statutar(50, 50+to_num_pvs)
 
     def continue_where_stopped(self, amount_to_process):
         if not os.path.exists(RESULTS_FOLDER_PATH):
@@ -35,7 +35,7 @@ class Handler:
         for i in range(from_num_pvs, to_num_pvs):
             meta_data, pdf = process_detail_page(i)
             if pdf is None:
-                result = NEREGISTROVANY
+                continue
             elif self.classifier.is_owner(meta_data, pdf):
                 result = MAJITEL
             else:
@@ -49,7 +49,8 @@ def save(meta_data, pdf, result):
     elif result == STATUTAR:
         state = "statutar"
     else:
-        state = "neregistrovany"
+        return
+        #state = "neregistrovany"
     meta_data['typ'] = state
     #meta_data.to_csv(CHECKED_CSV_PATH, mode='a', encoding='utf-8', index=False, header=False)
     with open(CHECKED_CSV_PATH, 'a', newline='', encoding='utf-8') as file:

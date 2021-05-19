@@ -29,10 +29,12 @@ def load_test_data(majitel, statuar):
 
 
 def evaluate(c: template.Classifier):
-    c.train(PATH_DATASET + "majitel", PATH_DATASET + "statutar", save_model=True)
+    c.train(PATH_DATASET + "majitel", PATH_DATASET + "statutar")
+    #c.train(PATH_DATASET + "majitel", PATH_DATASET + "statutar", path_pretrained="../../models/model_04-30-190526.joblib")
     test_data = load_test_data(PATH_DATASET + "test_majitel", PATH_DATASET + "test_statutar")
-    #test_data = test_data.sample(frac=1).reset_index(drop=True)
-    stats = {}
+
+
+
     correct_majitel = 0
     correct_statutar = 0
     all_majitel = 0
@@ -67,10 +69,10 @@ def evaluate(c: template.Classifier):
         "f1": f1
     }
     result = {"majitel": majitel}
-    print(
-        f'We had {all_majitel} documents of type "majitel", {correct_majitel / all_majitel * 100}"% of them was classified correctly')
-    print(
-        f'We had {all_statutar} documents of type "statutar", {correct_statutar / all_statutar * 100}"% of them was classified correctly')
+    #print(
+    #    f'We had {all_majitel} documents of type "majitel", {correct_majitel / all_majitel * 100}"% of them was classified correctly')
+    #print(
+    #    f'We had {all_statutar} documents of type "statutar", {correct_statutar / all_statutar * 100}"% of them was classified correctly')
     print(f'On question who is not KUV, just "statutar". Precision = {precision}, recall = {recall}, f1-score = {f1}')
     precision2 = correct_majitel / (all_statutar - correct_statutar + correct_majitel)
     recall2 = correct_majitel / all_majitel

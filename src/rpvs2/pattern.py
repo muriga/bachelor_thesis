@@ -26,7 +26,7 @@ class PatternExtract(Classifier):
         text = self.replace_meta(text, pdf_name)
         text = self.preprocessing(text)
         if using_stanza:
-            text = self.tokenize(text)
+            text = self.lemmatize(text)
         patterns = ["([^.]| z \\.| [0-9$§]+ . | p.sm \\. | ods \\.)*pvs([^.]| z \\.|[0-9$§]+ \\. )*kuv([^.]| "
                     "z \\.| [0-9$§]+ . | p.sm \\. | ods \\.)*",
                     "([^.]| z \\.| [0-9$§]+ . | p.sm \\. | ods \\.)*kuv([^.]| z \\.|[0-9$§]+ \\. )*pvs([^.]| "
@@ -81,7 +81,7 @@ class PatternExtract(Classifier):
     #         tokenized_sentences.append(i.group())
     #     return sentences, tokenized_sentences
 
-    def is_owner(self, pdf_name: str, fact_is_owner) -> bool:
+    def is_owner_testing(self, pdf_name: str, fact_is_owner) -> bool:
         owner = True
         if not pdf_name.endswith(".pdf"):
             pdf_name = pdf_name + ".pdf"
@@ -91,7 +91,7 @@ class PatternExtract(Classifier):
             return True
         text = self.replace_meta(text, pdf_name)
         text = self.preprocessing(text)
-        text = self.tokenize(text)
+        text = self.lemmatize(text)
         for i in range(len(self.patterns)):
             if re.search(self.patterns[i], text) is not None:
                 # print(f'{pdf_name} recognized by pattern {i}')
@@ -103,8 +103,16 @@ class PatternExtract(Classifier):
         return owner
 
     def pattern_statistics(self):
+        POCET_STATUTAROV = 24
         for i in range(len(self.patterns)):
+            if self.helped[i] + self.confused[i] == 0:
+                precision_statutar = 1
+            else:
+                precision_statutar = self.helped[i] / (self.helped[i] + self.confused[i])
+            recall_statutar = self.helped[i] / POCET_STATUTAROV
+            f1_statutar = (2 * precision_statutar * recall_statutar) / (precision_statutar + recall_statutar)
             print(f'{i}. pattern: {self.helped[i]}\tzle: {self.confused[i]}')
+            print(f'precision: {precision_statutar}, recall: {recall_statutar}, f1-score: {f1_statutar}')
 
     # Zákona o ochrane pred legalizáciou príjmov z trestnej činnosti a o ochrane pred |
     # inancovaním terorizmu a o zmene a doplnení niektorých zákonov -> zakx
@@ -151,66 +159,67 @@ class PatternExtract(Classifier):
         for i in range(len(tokenized_patterns)):
             print(f'{i}. pattern: {tokenized_patterns[i]}')
 
-    def tokenize(self, text):
-        tokenized = ""
+    def lemmatize(self, text):
+        lemmatized = ""
         doc = self.nlp(text)
         # for i, sentence in enumerate(doc.sentences):
         for sentence in doc.sentences:
             for token in sentence.words:
                 # only if is not in stop words?
                 if token.lemma not in self.stop_words:
+
                     if token.text[:2] == "ne" and token.lemma[:2] != "ne":
-                        tokenized += "ne" + token.lemma + " "
+                        lemmatized += "ne" + token.lemma + " "
                     else:
-                        tokenized += token.lemma + " "
-        return tokenized
+                        lemmatized += token.lemma + " "
+        return lemmatized
 
     def preprocessing(self, text):
         patterns = []
-        vm_kuv = "((jeho|jej)( |\n)*)?(.len([^ \n]*)?( |\n)*)?((jeho|jej)( |\n)*)?(vrcholov[^ \n]*" \
-                 "( |\n)*mana.ment[^ \n]*|(predstav[^ \n]*( |\n)*)?.tatut.r[^ \n]*( |\n)*org.n[^ \n]*)+"
-        pvs = "[Pp]artner([^ \n]*)?(( |\n)*verejn.([^ \n]*)?( |\n)*sektora)?"
-        kuv = "[Kk]one.n[^ \n]*( |\n)*u..vate[^ \n]*( |\n)*v.hod[^ \n]*"
-        nofo = "((.iadn[^ \n]*)( |\n)*)+fyzick.( |\n)*osob."
-        fo = "fyzick.( |\n)*osob."
-        os = ".pr.vn[^ \n]*( |\n)*.sob[^ \n]*"
+        vm_kuv = "((jeho|jej) *)?(.len([^ ]*)? *)?((jeho|jej) *)?(vrcholov[^ ]* " \
+                 "*mana.ment[^ ]*|(predstav[^ ]* *)?.tatut.r[^ ]* *org.n[^ ]*)+"
+        pvs = "partner([^ ]*)?( *verejn.([^ ]*)? *sektora)?"
+        kuv = "kone.n[^ ]* *u..vate[^ ]* *v.hod[^ ]*"
+        nofo = ".iadn[^ ]* *fyzick. *osob."
+        fo = "fyzick. *osob."
+        os = ".pr.vn[^ ]* *.sob[^ ]*"
         zakx = "[8$§](\.| |\n)*6a(\.| |\n)*(od)?([^ \n])*(\.| |\n)*([1-9I]?(\.| |\n)*)((p.s([^ \n])*" \
                "(\.| |\n)*([a-z)])*)?( |\n)*)?[Zz].ko([^ \n])*(\.| |\n)*(.\.(\.| |\n)*297\/2008(\.| |\n)*" \
                ".(\.| |\n)*.(\.| |\n)*)?(o( |\n))?(ochrane( |\n)*)?(pred( |\n)*)?(leg([^ \n])*( |\n)*)?" \
                "(pr.j([^ \n])*( |\n)*)?(z( |\n)*)?(tr([^ \n])*( |\n)*)?(.inn([^ \n])*(\n| ))?(a )?(o )?" \
                "(ochrane (pred )?fin([^ \n])* ter([^ \n])* . . zmene a do([^ \n])* nie([^ \n])*( |\n)*" \
                "z.k([^ \n])*( |\n))?((v )?znen([^ \n])*( |\n)nesk([^ \n])*( |\n)pred([^ \n])*)?"
-        pvs2 = "[pP][VvY][S5]"
+        pvs2 = "p[vy][s5]"
         text = " ".join(text.split())
         text = text.lower()
         text = substitute(vm_kuv, "vmkuv", text)
         text = substitute(pvs, "pvs", text)
         text = substitute(pvs2, "pvs", text)
         text = substitute(kuv, "kuv", text)
-        # text = substitute(nofo, "nofo", text)
-        # text = substitute(fo, "fo", text)
+        text = substitute(nofo, "nofo", text)
+        text = substitute(fo, "fo", text)
         text = substitute(os, "os", text)
         text = substitute("sp..a", "spĺňa", text)
-        text = substitute("KÚV", "kuv", text)
+        text = substitute("kúv", "kuv", text)
         # text = substitute(zakx, "zak1", text)
         return text
 
     def get_patterns(self):
         patterns = []
-        patterns.append(re.compile("(spolo.nos.|pvs) (v.lu.ne )?(nepriamo )?ovl.d(^ \n)* emitent(^ \n)*"))  # 0
-        patterns.append(re.compile("osoba [8$§]? 6a ods \. 2 z.k \. . \. 297\/2008"))  # 1
+        patterns.append(re.compile("ovl.d[^ ]* emitent[^ ]*"))  # 0
+        patterns.append(re.compile("6a ods \. 2"))  # 1
         patterns.append(re.compile(
-            r'(nofo nesp..a|nesp..a nofo)( |\n)((u) pvs )?(defin.ciu[^ \n]*|krit.ri[^ \n]*|([^ \n]*( |\n)){0,3})kuv'))  # 2
+            r'(nofo nespĺňa|(nespĺňa )?nofo) (pvs )?(nespĺňa )?(defin.ci[^ ]*|krit.ri[^ ]*)?([^ ]* | ){0,5}kuv'))  # 2
         patterns.append(re.compile(r'namiesto kuv'))  # 3
-        patterns.append(re.compile(r'nofo( |\n)*(pvs( |\n)*)*nesp..a( |\n)*(krit.r(^ \n)*|podmienk(^ \n)*)'))  # 4
-        patterns.append(re.compile(r'pov([^ \n]*)? vmkuv'))  # 5
+        patterns.append(re.compile(r'nofo (pvs )*nespĺňa (krit.r(^ )*|podmienk(^ )*)'))  # 4
+        patterns.append(re.compile(r'pov[^ ]* vmkuv'))  # 5
         return patterns
 
     def get_setting_patterns(self):
         patterns = []
         patterns.append("podmienky na zápis členov vrcholového manažmentu podľa ust. § 4 ods. ... sú splnené")
-        patterns.append("ako spoločnosti (nepriamo) ovládanej emitentom cenných papierov")
-        patterns.append("nebol (Oprávnena osoba) identifikovaná žiadna fyzická osoba, ktorá by mala viac ako 25%")
+        patterns.append("ako spoločnosti nepriamo ovládanej emitentom cenných papierov")
+        patterns.append("nebol os identifikovaná žiadna fyzická osoba, ktorá by mala viac ako 25%")
         patterns.append("sa zapisujú namiesto KÚV členovia vrcholového manažmentu")  # štatutárny orgán
         patterns.append(
             "neexistuje žiadna osoba, ktorá by konala v zhode alebo spoločným postupom, ani žiadna osoba, ktorá PVS ovláda")

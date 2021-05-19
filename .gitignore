@@ -12,3 +12,7 @@ tfdif.csv
 *.joblib
 models/
 vysledky/
+*.xlsx
+imgs/
+online_test_vysledky/
+test_vysledky/
