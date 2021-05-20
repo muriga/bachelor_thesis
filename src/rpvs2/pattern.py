@@ -76,8 +76,8 @@ class PatternExtract(Classifier):
         _PVS = meta_info['Meno PVS'].values[0]
         _OS = meta_info['Opravnena osoba'].values[0]
         _ADDR = meta_info['Adresa'].values[0]
-        p = re.compile(r'([, ]+[sS]lovensk[aá] republika)')
-        sk = re.search(p, _ADDR)
+        pattern = re.compile(r'([, ]+[sS]lovensk[aá] republika)')
+        sk = re.search(pattern, _ADDR)
         if sk is not None:
             _ADDR = _ADDR[:sk.start()]
 

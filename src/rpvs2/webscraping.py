@@ -5,6 +5,8 @@ import fitz
 
 BASE_URL = "https://rpvs.gov.sk/rpvs/Partner/Partner/Detail/"
 
+class EndRegister(Exception):
+    pass
 
 def append_if_exists(meta_data, dict, key):
     if key in dict:
@@ -99,4 +101,6 @@ def process_detail_page(num):
         elif headlines[0].string == 'Koneční užívatelia výhod':
             kuv_processing(meta_data, block)
             file = download_pdf(meta_data, block)
+    if meta_data['Dátum zápisu'] == '01.01.0001':
+        raise EndRegister
     return meta_data, file
