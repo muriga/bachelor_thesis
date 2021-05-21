@@ -1,5 +1,7 @@
 import pytesseract
 import ui
+import evaluation
+import slearning
 
 PATH_DATASET = "../../Dataset/"
 PATH_LIST = "../../Dataset/all.csv"
@@ -17,7 +19,7 @@ if __name__ == '__main__':
     # t.train()
 
 
-    # testing = slearning.MLPClassifierBoW(PATH_DATASET)
+    testing = slearning.MLPClassifierBoW(PATH_DATASET)
     # evaluation.evaluate(testing)
     # testing_pattern = pattern.PatternExtract(PATH_DATASET)
     # evaluation.evaluate(testing_pattern)
@@ -25,7 +27,9 @@ if __name__ == '__main__':
     # t = slearning.MLPClassifierWSent(PATH_DATASET)
     # evaluation.evaluate(t)
 
-    a = ui.Handler()
-    while a.handle():
-        pass
+
+    evaluation.k_fold()
+    # a = ui.Handler()
+    # while a.handle():
+    #     pass
     #a.continue_where_stopped(2)

@@ -40,21 +40,26 @@ class MLPClassifierBoW(Classifier):
         self.path_to_dataset = path_dataset
         self.classifier = None
         self.model_id = tm.strftime("%m-%d-%H%M%S")
-        self.vectorizer = CountVectorizer(min_df=7, max_df=96, ngram_range=(1, 8), analyzer='char_wb')
+        self.vectorizer = CountVectorizer(min_df=0.07, max_df=0.96, ngram_range=(1, 8), analyzer='char_wb')
         self.description = "CountVectorizer(min_df=7, max_df=96, ngram_range=(1, 8), analyzer='char_wb')" \
                            "not:TfidfTransformer(norm='l1', use_idf=True)\n" \
                            "MLPClassifier(solver='lbfgs', activation='relu', max_fun=7500, hidden_layer_sizes=(100, 50),\
                                         random_state=5, verbose=False, max_iter=400, n_iter_no_change=30, tol=0.001)"
-        self.bigram_vectorizer = CountVectorizer(min_df=5, ngram_range=(2, 2))
+        self.bigram_vectorizer = CountVectorizer(min_df=0.05, ngram_range=(2, 2))
 
-    def train(self, path_owners: str, path_managers: str, path_pretrained: str = None, save_model: bool = False):
+    def train(self, path_owners: str, path_managers: str, path_pretrained: str = None, save_model: bool = False,
+              using_k_fold=False, loaded_texts=None, loaded_targets=None):
         if path_pretrained is not None:
             self.classifier = load(path_pretrained)
             texts, target, pdf_names = load_data(path_owners, path_managers)
             self.vectorizer.fit(texts)
             self.bigram_vectorizer.fit(texts)
             return
-        texts, target, pdf_names = load_data(path_owners, path_managers)
+        if using_k_fold:
+            texts = loaded_texts
+            target = loaded_targets
+        else:
+            texts, target, pdf_names = load_data(path_owners, path_managers)
         dt_matrix_ngram_chars = self.vectorizer.fit_transform(texts).toarray()
         dt_matrix_bigram_words = self.bigram_vectorizer.fit_transform(texts).toarray()
         dt_matrix = np.column_stack((dt_matrix_ngram_chars, dt_matrix_bigram_words))
@@ -68,6 +73,8 @@ class MLPClassifierBoW(Classifier):
         if 'KUV' in meta_data:
             meta_data = translate_meta(meta_data)
             text = ocr.convert_to_text(pdf)
+        elif 'k_fold' in meta_data:
+            text = pdf
         else:
             text = get_text(self.path_to_dataset + 'test_all/' + pdf + ".pdf")
         text = replace_meta(text, meta_data)
