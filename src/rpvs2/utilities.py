@@ -3,6 +3,7 @@
 import pandas as pd
 import stanza
 import re
+import fitz
 
 PATH_DATASET = "../../Dataset/"
 PATH_LIST = "../../Dataset/all.csv"
@@ -62,9 +63,32 @@ def replace_meta(text, meta_data):
         meta_data['addr'] = meta_data['addr'][:sk.start()]
     for _kuv in meta_data['kuv']:
         text = substitute(_kuv, 'KUV', text)
+        a = _kuv.split('. ')
+        if len(a) > 1 and len(a[1]) > 3:
+            text = substitute(a[1], 'KUV', text)
     text = substitute(meta_data['pvs'], 'PVS', text)
     text = substitute(meta_data['os'], 'OS', text)
     text = substitute(meta_data['addr'], 'ADDR', text)
     return text
 
+class Classifier:
 
+    def train(self, path_owners: str, path_managers: str, path_pretrained: str = None, save_model: bool = False):
+        """Prepare model if it have one."""
+        pass
+
+    def is_owner(self, pdf_name: str) -> bool:
+        """Method tries to extract information from pdf, if it describes KUV who is owner."""
+        pass
+
+    def is_owner(self, meta_data: list, pdf: fitz.Document):
+        pass
+
+    def get_stop_words(self):
+        with open(self.path_to_dataset + "stop-words.txt", encoding="utf-8") as f:
+            lines = f.readlines()
+        stop_words = {lines[i].replace('\n', ''): i for i in range(len(lines))}
+        return stop_words
+
+    def write_desc(self, results):
+        pass

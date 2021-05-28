@@ -6,7 +6,6 @@ from sklearn.neural_network import MLPClassifier
 from ocr import get_text
 from utilities import replace_meta
 import pandas as pd
-from template import Classifier
 from joblib import dump, load
 import time as tm
 import numpy as np
@@ -16,6 +15,7 @@ from utilities import get_meta_by_pdfname
 from utilities import translate_meta
 from typing import Union
 import re
+from utilities import Classifier
 
 PATH_MODELS = "../../models/"
 MAJITEL = 0
@@ -36,19 +36,19 @@ def load_data(majitelia, statutari):
 
 class MLPClassifierBoW(Classifier):
 
-    def __init__(self, path_dataset):
+    def __init__(self, path_dataset, v_min_df=0.25, v_max_df=0.85):
         self.path_to_dataset = path_dataset
         self.classifier = None
         self.model_id = tm.strftime("%m-%d-%H%M%S")
-        self.vectorizer = CountVectorizer(min_df=0.07, max_df=0.96, ngram_range=(1, 8), analyzer='char_wb')
+        self.vectorizer = CountVectorizer(min_df=v_min_df, max_df=v_max_df, ngram_range=(1, 5), analyzer='char_wb')
         self.description = "CountVectorizer(min_df=7, max_df=96, ngram_range=(1, 8), analyzer='char_wb')" \
                            "not:TfidfTransformer(norm='l1', use_idf=True)\n" \
                            "MLPClassifier(solver='lbfgs', activation='relu', max_fun=7500, hidden_layer_sizes=(100, 50),\
                                         random_state=5, verbose=False, max_iter=400, n_iter_no_change=30, tol=0.001)"
-        self.bigram_vectorizer = CountVectorizer(min_df=0.05, ngram_range=(2, 2))
+        self.bigram_vectorizer = CountVectorizer(min_df=0.04, max_df=0.98, ngram_range=(1, 3))
 
     def train(self, path_owners: str, path_managers: str, path_pretrained: str = None, save_model: bool = False,
-              using_k_fold=False, loaded_texts=None, loaded_targets=None):
+              using_k_fold=False, loaded_texts=None, loaded_targets=None, hidden=(15, 100)):
         if path_pretrained is not None:
             self.classifier = load(path_pretrained)
             texts, target, pdf_names = load_data(path_owners, path_managers)
@@ -63,8 +63,8 @@ class MLPClassifierBoW(Classifier):
         dt_matrix_ngram_chars = self.vectorizer.fit_transform(texts).toarray()
         dt_matrix_bigram_words = self.bigram_vectorizer.fit_transform(texts).toarray()
         dt_matrix = np.column_stack((dt_matrix_ngram_chars, dt_matrix_bigram_words))
-
-        self.classifier = MLPClassifier(solver='lbfgs', activation='relu', hidden_layer_sizes=(100, 50),
+        # dt_matrix = dt_matrix_bigram_words
+        self.classifier = MLPClassifier(solver='lbfgs', activation='relu', hidden_layer_sizes=hidden,
                                         random_state=5, verbose=False).fit(dt_matrix, target)
         if save_model:
             dump(self.classifier, PATH_MODELS + "model_" + self.model_id + ".joblib")
@@ -81,6 +81,7 @@ class MLPClassifierBoW(Classifier):
         vector_ngram_chars = self.vectorizer.transform([text]).toarray()
         vector_bigram_words = self.bigram_vectorizer.transform([text])
         document_vector = np.column_stack((vector_ngram_chars, vector_bigram_words.toarray()))
+        # document_vector = vector_bigram_words
         prediction = self.classifier.predict(document_vector)
         if prediction == MAJITEL:
             return True

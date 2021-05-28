@@ -1,4 +1,4 @@
-from template import Classifier
+from utilities import Classifier
 import stanza
 import pandas as pd
 import re
