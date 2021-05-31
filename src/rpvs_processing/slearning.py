@@ -16,6 +16,8 @@ from utilities import translate_meta
 from typing import Union
 import re
 from utilities import Classifier
+from sklearn.svm import SVC
+from sklearn.naive_bayes import MultinomialNB
 
 PATH_MODELS = "../../models/"
 MAJITEL = 0
@@ -40,15 +42,18 @@ class MLPClassifierBoW(Classifier):
         self.path_to_dataset = path_dataset
         self.classifier = None
         self.model_id = tm.strftime("%m-%d-%H%M%S")
-        self.vectorizer = CountVectorizer(min_df=v_min_df, max_df=v_max_df, ngram_range=(1, 5), analyzer='char_wb')
+        self.vectorizer = CountVectorizer(min_df=0.4, max_df=0.99, ngram_range=(1, 6), analyzer='char_wb')
         self.description = "CountVectorizer(min_df=7, max_df=96, ngram_range=(1, 8), analyzer='char_wb')" \
                            "not:TfidfTransformer(norm='l1', use_idf=True)\n" \
                            "MLPClassifier(solver='lbfgs', activation='relu', max_fun=7500, hidden_layer_sizes=(100, 50),\
                                         random_state=5, verbose=False, max_iter=400, n_iter_no_change=30, tol=0.001)"
-        self.bigram_vectorizer = CountVectorizer(min_df=0.04, max_df=0.98, ngram_range=(1, 3))
+        #self.bigram_vectorizer = CountVectorizer(min_df=0.01, max_df=0.96, ngram_range=(1, 3))
+        self.bigram_vectorizer = CountVectorizer(min_df=0.04, max_df=0.98, ngram_range=(2, 3))
+        # my_voc = ['kuv', 'pvs', 'os', 'addr']
+        # self.additional_vectorizer = CountVectorizer(vocabulary=my_voc, ngram_range=(1, 2))
 
     def train(self, path_owners: str, path_managers: str, path_pretrained: str = None, save_model: bool = False,
-              using_k_fold=False, loaded_texts=None, loaded_targets=None, hidden=(15, 100)):
+              using_k_fold=False, loaded_texts=None, loaded_targets=None, hidden=(15, 25, 100)):
         if path_pretrained is not None:
             self.classifier = load(path_pretrained)
             texts, target, pdf_names = load_data(path_owners, path_managers)
@@ -63,9 +68,12 @@ class MLPClassifierBoW(Classifier):
         dt_matrix_ngram_chars = self.vectorizer.fit_transform(texts).toarray()
         dt_matrix_bigram_words = self.bigram_vectorizer.fit_transform(texts).toarray()
         dt_matrix = np.column_stack((dt_matrix_ngram_chars, dt_matrix_bigram_words))
-        # dt_matrix = dt_matrix_bigram_words
+        #dt_matrix_additional = self.additional_vectorizer.fit_transform(texts).toarray()
+        #dt_matrix = np.column_stack((dt_matrix, dt_matrix_additional))
+        #dt_matrix = dt_matrix_bigram_words
         self.classifier = MLPClassifier(solver='lbfgs', activation='relu', hidden_layer_sizes=hidden,
                                         random_state=5, verbose=False).fit(dt_matrix, target)
+        #self.classifier = MultinomialNB().fit(dt_matrix, target)
         if save_model:
             dump(self.classifier, PATH_MODELS + "model_" + self.model_id + ".joblib")
 
@@ -81,7 +89,9 @@ class MLPClassifierBoW(Classifier):
         vector_ngram_chars = self.vectorizer.transform([text]).toarray()
         vector_bigram_words = self.bigram_vectorizer.transform([text])
         document_vector = np.column_stack((vector_ngram_chars, vector_bigram_words.toarray()))
-        # document_vector = vector_bigram_words
+        #dt_matrix_additional = self.additional_vectorizer.fit_transform([text]).toarray()
+        #document_vector = np.column_stack((document_vector, dt_matrix_additional))
+        #document_vector = vector_bigram_words
         prediction = self.classifier.predict(document_vector)
         if prediction == MAJITEL:
             return True
@@ -97,39 +107,51 @@ class MLPClassifierBoW(Classifier):
 
 
 class MLPClassifierWSent(Classifier):
-    def __init__(self, path_dataset):
+    def __init__(self, path_dataset, v_min_df=0.25, v_max_df=0.85):
         self.path_to_dataset = path_dataset
         self.classifier = None
         self.model_id = tm.strftime("%m-%d-%H%M%S")
-        self.vectorizer = CountVectorizer(min_df=7, max_df=96, ngram_range=(1, 8), analyzer='char_wb')
+
+        self.vectorizer = CountVectorizer(min_df=0.25, max_df=0.99, ngram_range=(1, 5), analyzer='char_wb')
+        #self.bigram_vectorizer = CountVectorizer(min_df=0.01, max_df=0.96, ngram_range=(1, 3))
+        self.bigram_vectorizer = CountVectorizer(min_df=0.04, max_df=0.98, ngram_range=(2, 3))
+
+        #self.vectorizer = CountVectorizer(min_df=7, max_df=96, ngram_range=(1, 8), analyzer='char_wb')
         self.description = "CountVectorizer(min_df=7, max_df=96, ngram_range=(1, 8), analyzer='char_wb')" \
                            "not:TfidfTransformer(norm='l1', use_idf=True)\n" \
                            "MLPClassifier(solver='lbfgs', max_fun=7500, hidden_layer_sizes=(100, 50),\
                                         random_state=5, verbose=False, max_iter=400, n_iter_no_change=30, tol=0.001)"
         self.regex = PatternExtract(path_dataset)
         self.sentences_classifier = SentenceClassifier(path_dataset + "sentences.csv")
-        self.bigram_vectorizer = CountVectorizer(min_df=5, ngram_range=(2, 2))
+        #self.bigram_vectorizer = CountVectorizer(min_df=5, ngram_range=(2, 2))
 
-    def train(self, path_owners: str, path_managers: str, path_pretrained: str = None, save_model: bool = False):
+    def train(self, path_owners: str, path_managers: str, path_pretrained: str = None, save_model: bool = False,
+              using_k_fold=False, loaded_texts=None, loaded_targets=None, hidden=(15, 25, 100), pdfs=None):
         if path_pretrained is not None:
             self.classifier = load(path_pretrained)
             texts, target, pdf_names = self.load_data(path_owners, path_managers)
             self.vectorizer.fit(texts)
             self.bigram_vectorizer.fit(texts)
             return
-        texts, target, pdf_names = self.load_data(path_owners, path_managers)
+        if using_k_fold:
+            texts = loaded_texts
+            target = loaded_targets
+            pdf_names = pdfs
+        else:
+            texts, target, pdf_names = load_data(path_owners, path_managers)
         dt_matrix_ngram_chars = self.vectorizer.fit_transform(texts).toarray()
         dt_matrix_bigram_words = self.bigram_vectorizer.fit_transform(texts).toarray()
         dt_matrix = np.column_stack((dt_matrix_ngram_chars, dt_matrix_bigram_words))
         dt_matrix = self.add_sentences_features(dt_matrix, pdf_names)
 
-        self.classifier = MLPClassifier(solver='lbfgs', activation='relu', hidden_layer_sizes=(100, 50),
+        self.classifier = MLPClassifier(solver='lbfgs', activation='relu', hidden_layer_sizes=(15, 25, 100),
                                         random_state=5, verbose=False).fit(dt_matrix, target)
         if save_model:
             dump(self.classifier, PATH_MODELS + "model_" + self.model_id + ".joblib")
 
     def add_sentences_features(self, dt_matrix, pdf_names):
         count_of_type_diff = []
+        pdf_names = pdf_names[:len(dt_matrix)]
         for pdf in pdf_names:
             sentences = self.get_sentences(pdf)
             types = {
@@ -182,6 +204,9 @@ class MLPClassifierWSent(Classifier):
         if 'KUV' in meta_data:
             meta_data = translate_meta(meta_data)
             text = ocr.convert_to_text(pdf)
+        elif 'k_fold' in meta_data:
+            text = pdf
+            pdf = meta_data['pdf']
         else:
             text = get_text(self.path_to_dataset + 'test_all/' + pdf + ".pdf")
         text = replace_meta(text, meta_data)
@@ -210,7 +235,6 @@ class SentenceClassifier():
 
     def __init__(self, path_cv):
         self.path_to_cv = path_cv
-        self.regressor = MLPRegressor(solver='lbfgs', hidden_layer_sizes=(90, 45), random_state=5, max_iter=50000)
         self.classifier = MLPClassifier(solver='lbfgs', hidden_layer_sizes=(90, 45), random_state=5, max_iter=50000)
         self.model_id = tm.strftime("%m-%d-%H%M%S")
         self.vectorizer = CountVectorizer(min_df=0.05, max_df=0.95, ngram_range=(1, 9), analyzer='char_wb')

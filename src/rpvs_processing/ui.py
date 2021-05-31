@@ -8,9 +8,9 @@ from webscraping import process_detail_page
 from webscraping import EndRegister
 
 PATH_DATASET = "../../Dataset/"
-RESULTS_FOLDER_PATH = "../../nove_vysledky/"
+RESULTS_FOLDER_PATH = "../../vysledky/"
 CHECKED_CSV_PATH = RESULTS_FOLDER_PATH + "skontrolovane.csv"
-PATH_MODEL = '../../models/model_04-17-082028.joblib'
+PATH_MODEL = '../../models/final_model.joblib'
 NEREGISTROVANY = 0
 MAJITEL = 1
 STATUTAR = 2
@@ -83,6 +83,8 @@ class Handler:
     def find_last_record(self):
         if not os.path.exists(RESULTS_FOLDER_PATH):
             os.makedirs(RESULTS_FOLDER_PATH)
+            with open(RESULTS_FOLDER_PATH + "logging.log", "w") as file:
+                file.write('0')
             return 0
         with open(RESULTS_FOLDER_PATH + "logging.log", "r") as file:
             return int(file.read())
